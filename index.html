@@ -11,10 +11,40 @@
   <!-- Toast -->
   <div id="toast" class="toast" style="display:none;">已更新</div>
 
+  <!-- Role Gate -->
+  <div id="role-gate" class="role-gate" style="display:none;">
+    <div class="role-card">
+      <div class="role-head">
+        <div class="role-title">选择身份进入</div>
+        <div class="role-sub">演示用：不同身份仅展示对应业务板块</div>
+      </div>
+
+      <div class="role-grid">
+        <div class="role-item" onclick="setRole('teacher')">
+          <div class="role-icon">👩‍🏫</div>
+          <div class="role-name">教师身份</div>
+          <div class="role-desc">备课 · 批改 · 趋势分层异常联动</div>
+          <div class="role-tag">仅显示教师板块</div>
+        </div>
+
+        <div class="role-item" onclick="setRole('student')">
+          <div class="role-icon">🧑‍🎓</div>
+          <div class="role-name">学生身份</div>
+          <div class="role-desc">成长档案 · 周趋势 · 即时答疑</div>
+          <div class="role-tag">仅显示学生板块</div>
+        </div>
+      </div>
+
+      <div class="role-foot">
+        <button class="btn btn-ghost" onclick="setRole('teacher')">默认：教师进入</button>
+        <button class="btn btn-primary" onclick="setRole('student')">学生进入</button>
+      </div>
+    </div>
+  </div>
+
   <div class="sidebar">
     <div class="logo-area">
       <div class="logo-mark" aria-hidden="true">
-        <!-- 数字人 Icon（更像产品，不用 emoji） -->
         <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
           <defs>
             <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
@@ -38,25 +68,25 @@
     </div>
 
     <div class="nav-menu">
-      <div class="nav-item active" data-view="home" onclick="switchView('home', this)">
+      <div id="nav-home" class="nav-item active" data-view="home" onclick="switchView('home', this)">
         <span class="nav-icon">🏠</span> 首页入口
       </div>
-      <div class="nav-item" data-view="teacher" onclick="switchView('teacher', this)">
+      <div id="nav-teacher" class="nav-item" data-view="teacher" onclick="switchView('teacher', this)">
         <span class="nav-icon">👩‍🏫</span> 教师工作台
       </div>
-      <div class="nav-item" data-view="student" onclick="switchView('student', this)">
+      <div id="nav-student" class="nav-item" data-view="student" onclick="switchView('student', this)">
         <span class="nav-icon">🧑‍🎓</span> 学习伴侣
       </div>
-      <div class="nav-item" data-view="gov" onclick="switchView('gov', this)">
+      <div id="nav-gov" class="nav-item" data-view="gov" onclick="switchView('gov', this)">
         <span class="nav-icon">🌍</span> 治理驾驶舱
       </div>
     </div>
 
     <div class="user-profile">
-      <div class="avatar">李</div>
+      <div class="avatar" id="user-avatar">李</div>
       <div class="user-meta">
-        <div class="user-name">李老师</div>
-        <div class="user-sub">数学组 · 七年级</div>
+        <div class="user-name" id="user-name">李老师</div>
+        <div class="user-sub" id="user-sub">数学组 · 七年级</div>
       </div>
     </div>
   </div>
@@ -78,35 +108,39 @@
       <section id="view-home" class="view-container active">
         <div class="home-hero">
           <h1>今天想做点什么？</h1>
-          <p>全链路教育大模型已就绪：备课、学情分析、作业诊断、学生成长档案与答疑。</p>
+          <p>系统已按身份隔离，仅展示你所属角色的业务入口。</p>
 
           <div class="home-search">
             <input id="home-input" class="magic-input" type="text"
-              placeholder="输入：'帮我备课' / '批改作业' / '看趋势分层异常' / '打开学生成长档案'"
+              placeholder="教师：'看趋势分层异常' | 学生：'打开成长档案' | '即时答疑'"
               onkeypress="if(event.key==='Enter') startScenarioFromHome()" />
             <button class="btn btn-primary" onclick="startScenarioFromHome()">进入</button>
           </div>
 
           <div class="card-grid">
-            <div class="feature-card" onclick="startScenario('prep')">
+            <div class="feature-card" id="home-card-prep" onclick="startScenario('prep')">
               <div class="card-emoji">📘</div>
               <h3>智能备课</h3>
               <p>教案生成 + 学情薄弱点强化环节</p>
               <span class="tag">教师端</span>
             </div>
-            <div class="feature-card" onclick="startScenario('mark')">
+
+            <div class="feature-card" id="home-card-mark" onclick="startScenario('mark')">
               <div class="card-emoji">✍️</div>
               <h3>作业批改</h3>
-              <p>OCR 扫描诊断 + 异常联动分析</p>
+              <p>扫描诊断 + 异常联动分析</p>
               <span class="tag">教师端</span>
             </div>
-            <div class="feature-card" onclick="switchView('student', document.querySelector('[data-view=student]'))">
+
+            <div class="feature-card" id="home-card-growth" onclick="switchView('student', document.querySelector('[data-view=student]'))">
               <div class="card-emoji">📈</div>
               <h3>成长档案</h3>
               <p>能力雷达 + 周趋势 + 档案沉淀</p>
               <span class="tag">学生端</span>
             </div>
           </div>
+
+          <div class="home-role-tip" id="home-role-tip"></div>
         </div>
       </section>
 
@@ -289,7 +323,7 @@
                 <div class="ana-card anomaly-card">
                   <div class="card-head">
                     <div class="card-title">异常钻取</div>
-                    <div class="card-sub">点击异常查看详情（并可跳转到学生成长档案）</div>
+                    <div class="card-sub">点击异常查看详情（教师侧弹窗内钻取学生档案）</div>
                   </div>
 
                   <div class="chip-row">
@@ -308,7 +342,7 @@
       </section>
 
       <!-- =========================
-           STUDENT (学习伴侣)
+           STUDENT
       ========================== -->
       <section id="view-student" class="view-container">
         <div class="student-top">
@@ -336,10 +370,8 @@
           <button class="tab-btn" id="tab-qa" onclick="setStudentTab('qa')">即时答疑</button>
         </div>
 
-        <!-- Growth -->
         <div id="student-growth" class="student-page active">
           <div class="student-grid">
-            <!-- Left: Radar + Gap -->
             <div class="student-card">
               <div class="card-head">
                 <div class="card-title">能力雷达</div>
@@ -360,7 +392,6 @@
               </div>
             </div>
 
-            <!-- Middle: Weekly Trend -->
             <div class="student-card">
               <div class="card-head">
                 <div class="card-title">周度学情趋势</div>
@@ -392,7 +423,6 @@
               <div class="resource-row" id="resource-row"></div>
             </div>
 
-            <!-- Right: Archive -->
             <div class="student-card">
               <div class="card-head">
                 <div class="card-title">成长档案</div>
@@ -408,7 +438,6 @@
           </div>
         </div>
 
-        <!-- QA -->
         <div id="student-qa" class="student-page">
           <div class="qa-layout">
             <div class="qa-card">
