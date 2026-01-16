@@ -111,7 +111,7 @@ function setActiveView(id) {
   const view = $(`#view-${id}`);
   if (view) view.classList.add("active");
 
-  const titles = { home: "首页", teacher: "教师工作台", student: "学生学伴", gov: "治理驾驶舱" };
+  const titles = { home: "首页", teacher: "教师工作台", student: "学生伴侣", gov: "治理驾驶舱" };
   $("#page-title").textContent = titles[id] || "工作区";
 
   // header toggle
