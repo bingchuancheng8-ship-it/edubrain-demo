@@ -2,45 +2,42 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI EduBrain Demo v0.9.2</title>
-
-  <link rel="icon" href="/assets/favicon.svg?v=0.9.2" />
-  <link rel="stylesheet" href="/assets/app.css?v=0.9.2" />
-  <script defer src="/assets/app.js?v=0.9.2"></script>
+  <link rel="stylesheet" href="./app.css?v=0.9.2" />
 </head>
 
 <body>
   <!-- Toast -->
-  <div id="toast" class="toast" style="display:none;"></div>
+  <div id="toast" class="toast" style="display:none;">已更新</div>
 
-  <!-- Modal -->
-  <div id="modal" class="modal" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-head">
-        <div id="modal-title" class="modal-title">异常详情</div>
-        <button id="modal-close" class="modal-close">✕</button>
-      </div>
-      <div id="modal-body" class="modal-body"></div>
-    </div>
-  </div>
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
+  <div class="sidebar">
     <div class="logo-area">
-      <div class="logo-left">
-        <div class="logo-icon">
-          <img src="/assets/digital-human.svg?v=0.9.2" alt="Digital Human" onerror="this.style.display='none'" />
-        </div>
-        <div class="logo-text">
-          <div class="logo-title">AI EduBrain</div>
-          <div class="logo-sub">教育大模型 Demo</div>
-        </div>
+      <div class="logo-mark" aria-hidden="true">
+        <!-- 数字人 Icon（更像产品，不用 emoji） -->
+        <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+          <circle cx="32" cy="32" r="28" fill="url(#g1)"/>
+          <circle cx="32" cy="27" r="10" fill="rgba(255,255,255,0.92)"/>
+          <path d="M16 50c3-9 13-14 16-14s13 5 16 14" fill="rgba(255,255,255,0.92)"/>
+          <circle cx="28" cy="26" r="1.8" fill="#4f46e5"/>
+          <circle cx="36" cy="26" r="1.8" fill="#4f46e5"/>
+          <path d="M28 31c2.5 2 5.5 2 8 0" stroke="#4f46e5" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title">AI EduBrain</div>
+        <div class="logo-sub">K12 教育智能体演示</div>
       </div>
       <div class="logo-badge" id="app-version">v0.9.2</div>
     </div>
 
-    <nav class="nav-menu">
+    <div class="nav-menu">
       <div class="nav-item active" data-view="home" onclick="switchView('home', this)">
         <span class="nav-icon">🏠</span> 首页入口
       </div>
@@ -48,346 +45,461 @@
         <span class="nav-icon">👩‍🏫</span> 教师工作台
       </div>
       <div class="nav-item" data-view="student" onclick="switchView('student', this)">
-        <span class="nav-icon">🎓</span> 学习伴侣
+        <span class="nav-icon">🧑‍🎓</span> 学习伴侣
       </div>
       <div class="nav-item" data-view="gov" onclick="switchView('gov', this)">
         <span class="nav-icon">🌍</span> 治理驾驶舱
       </div>
-    </nav>
+    </div>
 
     <div class="user-profile">
       <div class="avatar">李</div>
       <div class="user-meta">
         <div class="user-name">李老师</div>
-        <div class="user-dept">数学组 · 七年级</div>
+        <div class="user-sub">数学组 · 七年级</div>
       </div>
     </div>
-  </aside>
+  </div>
 
-  <!-- Main -->
-  <main class="main-content">
-    <header class="top-header" id="top-header">
+  <div class="main-content">
+    <div class="top-header" id="top-header">
       <div class="breadcrumb">
-        工作区 / <span id="page-title" class="page-title">首页入口</span>
+        工作区 / <span id="page-title">首页入口</span>
       </div>
       <div class="sys-status">
         <span class="dot"></span> 系统正常
       </div>
-    </header>
+    </div>
 
-    <section class="view-wrapper">
-
-      <!-- HOME -->
-      <div id="view-home" class="view-container active">
+    <div class="view-wrapper">
+      <!-- =========================
+           HOME
+      ========================== -->
+      <section id="view-home" class="view-container active">
         <div class="home-hero">
-          <div class="hero-title">今天想做点什么？</div>
-          <div class="hero-sub">全链路教育大模型已就绪 · 备课 / 批改 / 分析一体化</div>
+          <h1>今天想做点什么？</h1>
+          <p>全链路教育大模型已就绪：备课、学情分析、作业诊断、学生成长档案与答疑。</p>
 
           <div class="home-search">
-            <input id="home-input" class="magic-input" placeholder="输入：帮我备课 / 批改作业 / 打开趋势分层异常分析（回车）" />
-            <button class="btn btn-primary" onclick="startScenarioFromHome()">立即开始</button>
+            <input id="home-input" class="magic-input" type="text"
+              placeholder="输入：'帮我备课' / '批改作业' / '看趋势分层异常' / '打开学生成长档案'"
+              onkeypress="if(event.key==='Enter') startScenarioFromHome()" />
+            <button class="btn btn-primary" onclick="startScenarioFromHome()">进入</button>
           </div>
 
           <div class="card-grid">
             <div class="feature-card" onclick="startScenario('prep')">
-              <div class="fc-icon">📘</div>
-              <div class="fc-title">智能备课</div>
-              <div class="fc-sub">生成教案 · 自动补齐薄弱点强化</div>
+              <div class="card-emoji">📘</div>
+              <h3>智能备课</h3>
+              <p>教案生成 + 学情薄弱点强化环节</p>
+              <span class="tag">教师端</span>
             </div>
             <div class="feature-card" onclick="startScenario('mark')">
-              <div class="fc-icon">✍️</div>
-              <div class="fc-title">作业批改</div>
-              <div class="fc-sub">OCR 扫描 · 异常预警联动分析</div>
+              <div class="card-emoji">✍️</div>
+              <h3>作业批改</h3>
+              <p>OCR 扫描诊断 + 异常联动分析</p>
+              <span class="tag">教师端</span>
             </div>
             <div class="feature-card" onclick="switchView('student', document.querySelector('[data-view=student]'))">
-              <div class="fc-icon">🎧</div>
-              <div class="fc-title">学习伴侣</div>
-              <div class="fc-sub">口语陪练 · 自主学习即时答疑</div>
+              <div class="card-emoji">📈</div>
+              <h3>成长档案</h3>
+              <p>能力雷达 + 周趋势 + 档案沉淀</p>
+              <span class="tag">学生端</span>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- TEACHER -->
-      <div id="view-teacher" class="view-container">
-        <div class="teacher-topbar">
-          <div class="mode-switch">
-            <button id="btn-prep" class="btn btn-primary" onclick="setTeacherMode('prep')">📚 备课</button>
-            <button id="btn-mark" class="btn btn-ghost" onclick="setTeacherMode('mark')">✍️ 批改</button>
-            <button id="btn-ana" class="btn btn-ghost" onclick="setTeacherMode('ana')">📈 分析</button>
+      <!-- =========================
+           TEACHER
+      ========================== -->
+      <section id="view-teacher" class="view-container">
+        <div class="teacher-toolbar">
+          <button id="btn-prep" class="btn btn-primary" onclick="setTeacherMode('prep')">📚 备课</button>
+          <button id="btn-mark" class="btn btn-ghost" onclick="setTeacherMode('mark')">✍️ 批改</button>
+          <button id="btn-ana" class="btn btn-ghost" onclick="setTeacherMode('ana')">📊 分析联动</button>
+          <div class="teacher-toolbar-right">
+            <span class="hint-badge">支持：趋势点 → 分层 → 异常钻取 联动</span>
           </div>
-          <div class="teacher-hint">提示：趋势点位 / 分层卡片 / 异常列表 可点击联动</div>
         </div>
 
         <div class="split-layout">
-          <!-- Left: Chat -->
+          <!-- Left: chat -->
           <div class="panel">
-            <div class="panel-head">AI 教学助手</div>
+            <div class="panel-title">
+              AI 教学助手
+              <span class="panel-sub">备课 · 批改 · 学情分析</span>
+            </div>
 
             <div class="chat-history" id="chat-box">
-              <div class="msg ai"><div class="msg-bubble">李老师好！我是您的智能教学助手。你可以：备课、批改、或打开趋势分层异常联动分析。</div></div>
+              <div class="msg ai">
+                <div class="msg-bubble">
+                  李老师好！我是您的智能教学助手。你可以输入：<b>“生成教案”</b>、<b>“看趋势分层异常”</b>。
+                </div>
+              </div>
             </div>
 
             <div class="chat-input">
-              <input id="teacher-input" type="text" placeholder="输入：生成教案 / 打开趋势分析 / 查看异常钻取..." />
+              <input
+                id="teacher-input"
+                type="text"
+                placeholder="输入指令：生成教案 / 关联薄弱点 / 查看趋势分层异常..."
+                onkeypress="if(event.key==='Enter') triggerMsg()" />
               <button class="btn btn-primary" onclick="triggerMsg()">发送</button>
             </div>
           </div>
 
-          <!-- Right: Workspace -->
+          <!-- Right: workspace -->
           <div class="workspace">
-
             <!-- PREP VIEW -->
-            <div id="prep-view" class="work-view active">
-              <div class="work-card">
-                <div class="work-title">备课工作区</div>
-                <div class="work-sub">示例：分数应用题 · 目标拆解 · 强化薄弱点</div>
-
-                <div class="lesson-card">
-                  <div class="lesson-title">📘 教学设计：分数应用题（示例）</div>
-                  <div class="lesson-body">
-                    <div class="timeline">
-                      <div class="t-item">
-                        <div class="t-time">00:00</div>
-                        <div class="t-main">
-                          <div class="t-title">课堂导入</div>
-                          <div class="t-sub">用“切蛋糕/配比”场景引入分数数量关系</div>
-                        </div>
-                      </div>
-                      <div class="t-item">
-                        <div class="t-time">05:00</div>
-                        <div class="t-main">
-                          <div class="t-title">核心探究</div>
-                          <div class="t-sub">画线段图→列式→检验，强调“单位1”定位</div>
-                        </div>
-                      </div>
-                      <div class="t-item">
-                        <div class="t-time">18:00</div>
-                        <div class="t-main">
-                          <div class="t-title">薄弱点强化</div>
-                          <div class="t-sub">针对“分数÷分数”高错点：3组基础练习 + 2道变式迁移</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button class="btn btn-primary btn-full" onclick="showToast('已模拟导出 PPT（示例）')">✨ 导出 PPT</button>
-                  </div>
-                </div>
+            <div id="prep-view" class="workspace-view active">
+              <div class="empty-state" id="prep-placeholder">
+                <div class="empty-icon">✨</div>
+                <div class="empty-title">AI 魔法准备中</div>
+                <div class="empty-sub">输入“生成分数应用题教案并补齐薄弱点强化环节”</div>
               </div>
+              <div id="lesson-result" style="display:none;"></div>
             </div>
 
             <!-- MARK VIEW -->
-            <div id="mark-view" class="work-view">
-              <div class="work-card">
-                <div class="work-title">批改工作区</div>
-                <div class="work-sub">点击右侧模拟 OCR 扫描：会写入异常并联动分析</div>
+            <div id="mark-view" class="workspace-view">
+              <div class="ocr-shell" onclick="runOCR()">
+                <div id="ocr-tip" class="ocr-tip">📸 点击屏幕模拟扫描（生成异常并联动到分析）</div>
 
-                <div id="ocr-stage" class="ocr-stage">
-                  <div id="ocr-tip" class="ocr-tip">📸 点击开始模拟扫描</div>
-                  <div class="paper-mock">
-                    <div class="paper-title">数学单元测试</div>
-                    <div class="paper-body">
-                      1) 1/2 + 1/3 = 5/6（✓）<br />
-                      2) 20 ÷ 3/4 = 80/3（✗）<br />
-                      3) 5/6 × 12 = 10（✓）
-                    </div>
-                    <div id="ocr-error" class="ocr-error" style="display:none;"></div>
-                  </div>
-                  <div id="ocr-laser" class="ocr-laser" style="display:none;"></div>
+                <div class="paper-mock">
+                  <h3>数学单元测试</h3>
+                  <p>
+                    1. 1/2 + 1/3 = 5/6 (✓)<br/>
+                    2. 20 ÷ 3/4 = 80/3 (✗)<br/>
+                    3. 3/5 × 10 = 6 (✓)
+                  </p>
+                  <div id="ocr-error" class="error-spot" style="top:118px;left:72px;"></div>
                 </div>
+
+                <div id="ocr-laser" class="scan-laser"></div>
+              </div>
+
+              <div class="mark-tip">
+                扫描后可切换到「分析联动」查看趋势/分层/异常钻取效果。
               </div>
             </div>
 
-            <!-- ANA VIEW -->
-            <div id="ana-view" class="work-view">
-              <div class="work-card">
-                <div class="work-title">联动分析</div>
-                <div class="work-sub">
-                  点击趋势点位 → 联动刷新分层与异常；点击分层 → 过滤异常；点击异常 → 异常钻取详情
-                </div>
-
-                <!-- KPI -->
-                <div class="kpi-row">
-                  <div class="kpi-card">
-                    <div class="kpi-label">已批改</div>
-                    <div id="kpi-marked" class="kpi-value">—</div>
-                    <div class="kpi-sub">今日累计</div>
-                  </div>
-                  <div class="kpi-card">
-                    <div class="kpi-label">掌握度</div>
-                    <div id="kpi-mastery" class="kpi-value">—</div>
-                    <div class="kpi-sub">趋势同步</div>
-                  </div>
-                  <div id="kpi-anomaly-card" class="kpi-card clickable">
-                    <div class="kpi-label">异常预警</div>
-                    <div id="kpi-anomaly" class="kpi-value">—</div>
-                    <div class="kpi-sub">点击查看汇总</div>
-                  </div>
-                </div>
-
-                <!-- Trend -->
-                <div class="section">
-                  <div class="section-head">
-                    <div class="section-title">趋势图</div>
-                    <div class="section-meta">
-                      <span id="trend-day-label" class="pill">—</span>
-                      <span id="trend-value-label" class="pill primary">—</span>
+            <!-- ANALYSIS VIEW -->
+            <div id="ana-view" class="workspace-view">
+              <div class="ana-grid">
+                <div class="ana-card kpi-card">
+                  <div class="kpi-top">
+                    <div>
+                      <div class="kpi-title">当日批改量</div>
+                      <div class="kpi-value" id="kpi-marked">18</div>
                     </div>
+                    <div class="kpi-icon">✅</div>
                   </div>
-                  <div class="trend-wrap">
-                    <canvas id="trend-canvas" width="560" height="220"></canvas>
+                  <div class="kpi-sub">自动批改 + 主观题初评</div>
+                </div>
+
+                <div class="ana-card kpi-card">
+                  <div class="kpi-top">
+                    <div>
+                      <div class="kpi-title">掌握度</div>
+                      <div class="kpi-value" id="kpi-mastery">73%</div>
+                    </div>
+                    <div class="kpi-icon">📈</div>
+                  </div>
+                  <div class="kpi-sub">
+                    当前点：<b id="trend-day-label">周日</b> · <b id="trend-value-label">73%</b>
                   </div>
                 </div>
 
-                <!-- Tier + Anomaly -->
-                <div class="grid-2">
-                  <!-- Tier -->
-                  <div class="section">
-                    <div class="section-head">
-                      <div class="section-title">班级分层</div>
-                      <div class="section-meta subtle">点击 A/B/C 聚焦</div>
+                <div class="ana-card kpi-card">
+                  <div class="kpi-top">
+                    <div>
+                      <div class="kpi-title">异常预警</div>
+                      <div class="kpi-value" id="kpi-anomaly">1</div>
                     </div>
+                    <div class="kpi-icon">⚠️</div>
+                  </div>
+                  <div class="kpi-sub">
+                    <button class="btn btn-ghost btn-sm" onclick="openAnomalyDrawer()">查看汇总</button>
+                  </div>
+                </div>
 
-                    <div class="tier-list">
-                      <div id="tier-a" class="tier-row">
-                        <div class="tier-left">
-                          <div class="tier-tag A">A</div>
-                          <div class="tier-name">拔高组</div>
-                        </div>
-                        <div class="tier-mid">
-                          <div class="tier-bar"><div id="tier-a-bar" class="tier-fill A"></div></div>
-                          <div class="tier-mini">
-                            <span><b id="tier-a-count">—</b> 人</span>
-                            <span id="tier-a-rate">—</span>
-                          </div>
+                <div class="ana-card chart-card">
+                  <div class="card-head">
+                    <div class="card-title">趋势图（7天）</div>
+                    <div class="card-sub">点击点位联动刷新：分层 / 异常</div>
+                  </div>
+                  <canvas id="trend-canvas" width="680" height="220"></canvas>
+                </div>
+
+                <div class="ana-card tier-card">
+                  <div class="card-head">
+                    <div class="card-title">班级分层</div>
+                    <div class="card-sub">点击 A/B/C 进行聚焦过滤</div>
+                  </div>
+
+                  <div class="tier-list">
+                    <div class="tier-row" onclick="selectTier('A')">
+                      <div class="tier-left">
+                        <div class="tier-badge A">A</div>
+                        <div class="tier-meta">
+                          <div class="tier-name">拔高层</div>
+                          <div class="tier-desc">综合题/迁移/速度</div>
                         </div>
                       </div>
-
-                      <div id="tier-b" class="tier-row">
-                        <div class="tier-left">
-                          <div class="tier-tag B">B</div>
-                          <div class="tier-name">稳步组</div>
-                        </div>
-                        <div class="tier-mid">
-                          <div class="tier-bar"><div id="tier-b-bar" class="tier-fill B"></div></div>
-                          <div class="tier-mini">
-                            <span><b id="tier-b-count">—</b> 人</span>
-                            <span id="tier-b-rate">—</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div id="tier-c" class="tier-row">
-                        <div class="tier-left">
-                          <div class="tier-tag C">C</div>
-                          <div class="tier-name">补救组</div>
-                        </div>
-                        <div class="tier-mid">
-                          <div class="tier-bar"><div id="tier-c-bar" class="tier-fill C"></div></div>
-                          <div class="tier-mini">
-                            <span><b id="tier-c-count">—</b> 人</span>
-                            <span id="tier-c-rate">—</span>
-                          </div>
-                        </div>
+                      <div class="tier-right">
+                        <div class="tier-num"><span id="tier-a-count">9</span>人</div>
+                        <div class="tier-rate" id="tier-a-rate">28%</div>
                       </div>
                     </div>
-                  </div>
+                    <div class="tier-bar"><div id="tier-a-bar" class="tier-bar-inner A"></div></div>
 
-                  <!-- Anomaly -->
-                  <div class="section">
-                    <div class="section-head">
-                      <div class="section-title">异常钻取</div>
-                      <div class="section-meta subtle">点击异常进入详情</div>
+                    <div class="tier-row" onclick="selectTier('B')">
+                      <div class="tier-left">
+                        <div class="tier-badge B">B</div>
+                        <div class="tier-meta">
+                          <div class="tier-name">达标层</div>
+                          <div class="tier-desc">稳定掌握/少量错因</div>
+                        </div>
+                      </div>
+                      <div class="tier-right">
+                        <div class="tier-num"><span id="tier-b-count">14</span>人</div>
+                        <div class="tier-rate" id="tier-b-rate">44%</div>
+                      </div>
                     </div>
+                    <div class="tier-bar"><div id="tier-b-bar" class="tier-bar-inner B"></div></div>
 
-                    <div class="chip-row">
-                      <div class="chip active" data-filter="all">全部</div>
-                      <div class="chip" data-filter="missing">缺交</div>
-                      <div class="chip" data-filter="error">错误率</div>
-                      <div class="chip" data-filter="time">时长</div>
+                    <div class="tier-row" onclick="selectTier('C')">
+                      <div class="tier-left">
+                        <div class="tier-badge C">C</div>
+                        <div class="tier-meta">
+                          <div class="tier-name">补救层</div>
+                          <div class="tier-desc">基础运算/建模强化</div>
+                        </div>
+                      </div>
+                      <div class="tier-right">
+                        <div class="tier-num"><span id="tier-c-count">9</span>人</div>
+                        <div class="tier-rate" id="tier-c-rate">28%</div>
+                      </div>
                     </div>
-
-                    <div id="anomaly-list" class="anomaly-list"></div>
+                    <div class="tier-bar"><div id="tier-c-bar" class="tier-bar-inner C"></div></div>
                   </div>
                 </div>
 
+                <div class="ana-card anomaly-card">
+                  <div class="card-head">
+                    <div class="card-title">异常钻取</div>
+                    <div class="card-sub">点击异常查看详情（并可跳转到学生成长档案）</div>
+                  </div>
+
+                  <div class="chip-row">
+                    <div class="chip active" onclick="setAnomalyFilter('all', this)">全部</div>
+                    <div class="chip" onclick="setAnomalyFilter('missing', this)">缺交</div>
+                    <div class="chip" onclick="setAnomalyFilter('error', this)">错误率</div>
+                    <div class="chip" onclick="setAnomalyFilter('time', this)">时长</div>
+                  </div>
+
+                  <div class="anomaly-list" id="anomaly-list"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================
+           STUDENT (学习伴侣)
+      ========================== -->
+      <section id="view-student" class="view-container">
+        <div class="student-top">
+          <div class="student-top-left">
+            <div class="student-title">学习伴侣</div>
+            <div class="student-sub">分阶段成长适配 · 即时自主学习答疑 · 成长档案沉淀</div>
+          </div>
+
+          <div class="student-top-right">
+            <div class="student-select">
+              <span class="label">学生：</span>
+              <select id="student-select" onchange="onStudentChange(this.value)">
+                <option value="S-01">宋扬（七年级）</option>
+                <option value="S-02">高航（七年级）</option>
+                <option value="S-04">王铭（七年级）</option>
+                <option value="S-06">周一帆（七年级）</option>
+              </select>
+            </div>
+            <div class="streak-pill">🔥 打卡 <span id="student-streak">12</span> 天</div>
+          </div>
+        </div>
+
+        <div class="student-tabs">
+          <button class="tab-btn active" id="tab-growth" onclick="setStudentTab('growth')">成长档案</button>
+          <button class="tab-btn" id="tab-qa" onclick="setStudentTab('qa')">即时答疑</button>
+        </div>
+
+        <!-- Growth -->
+        <div id="student-growth" class="student-page active">
+          <div class="student-grid">
+            <!-- Left: Radar + Gap -->
+            <div class="student-card">
+              <div class="card-head">
+                <div class="card-title">能力雷达</div>
+                <div class="card-sub">对标学段能力标准（示例）</div>
+              </div>
+
+              <div class="radar-wrap">
+                <canvas id="radar-canvas" width="360" height="260"></canvas>
+                <div class="radar-legend">
+                  <div class="legend-item"><span class="dot dot-a"></span> 当前水平</div>
+                  <div class="legend-item"><span class="dot dot-b"></span> 学段目标</div>
+                </div>
+              </div>
+
+              <div class="gap-box">
+                <div class="gap-title">差距提示（通俗版）</div>
+                <ul id="gap-list" class="gap-list"></ul>
               </div>
             </div>
 
-          </div>
-        </div>
-      </div>
+            <!-- Middle: Weekly Trend -->
+            <div class="student-card">
+              <div class="card-head">
+                <div class="card-title">周度学情趋势</div>
+                <div class="card-sub">掌握度 · 错题数 · 学习时长（示例）</div>
+              </div>
 
-      <!-- STUDENT -->
-      <div id="view-student" class="view-container">
-        <div class="student-header">
-          <div>
-            <div class="student-title">👋 早上好，小明</div>
-            <div class="student-sub">今天建议：先完成 10 分钟跟读，再做 2 道分数变式题</div>
-          </div>
-          <div class="student-streak">🔥 打卡 12 天</div>
-        </div>
+              <div class="week-kpis">
+                <div class="wk">
+                  <div class="wk-l">本周掌握度</div>
+                  <div class="wk-v" id="wk-mastery">76%</div>
+                </div>
+                <div class="wk">
+                  <div class="wk-l">错题数</div>
+                  <div class="wk-v" id="wk-wrong">8</div>
+                </div>
+                <div class="wk">
+                  <div class="wk-l">学习时长</div>
+                  <div class="wk-v" id="wk-min">142</div>
+                </div>
+              </div>
 
-        <div class="student-grid">
-          <div class="task-card primary" onclick="openVoiceModal()">
-            <div class="task-icon">🎙️</div>
-            <div class="task-title">Unit 3 课文跟读</div>
-            <div class="task-sub">预计用时 5 分钟 · 语音评分</div>
-            <button class="btn btn-white">开始挑战</button>
-          </div>
+              <canvas id="week-canvas" width="680" height="250"></canvas>
 
-          <div class="task-card">
-            <div class="badge red">错题巩固</div>
-            <div class="task-title">分数乘除法</div>
-            <div class="task-sub">3 道变式题待完成</div>
-            <button class="btn btn-ghost">去完成</button>
-          </div>
+              <div class="student-actions">
+                <button class="btn btn-primary" onclick="generateWeeklyReview()">生成周度复盘</button>
+                <button class="btn btn-ghost" onclick="recommendResources()">推送学习资源</button>
+              </div>
 
-          <div class="task-card">
-            <div class="badge blue">成长档案</div>
-            <div class="task-title">本周进步</div>
-            <div class="task-sub">掌握度 +5% · 错题减少 2 个</div>
-            <button class="btn btn-ghost">查看档案</button>
-          </div>
-        </div>
-
-        <div id="voice-modal" class="voice-modal" style="display:none;">
-          <div class="voice-card">
-            <div class="voice-title">正在跟读...</div>
-            <div class="wave-row">
-              <div class="wave-bar" style="animation-delay:0s"></div>
-              <div class="wave-bar" style="animation-delay:0.1s"></div>
-              <div class="wave-bar" style="animation-delay:0.2s"></div>
-              <div class="wave-bar" style="animation-delay:0.3s"></div>
-              <div class="wave-bar" style="animation-delay:0.4s"></div>
+              <div class="resource-row" id="resource-row"></div>
             </div>
-            <div class="quote">"Actions speak louder than words."</div>
-            <button class="btn btn-primary" onclick="closeVoiceModal()">完成录音</button>
+
+            <!-- Right: Archive -->
+            <div class="student-card">
+              <div class="card-head">
+                <div class="card-title">成长档案</div>
+                <div class="card-sub">自动沉淀：诊断报告 · 建议 · 复盘</div>
+              </div>
+
+              <div class="archive-list" id="archive-list"></div>
+
+              <div class="archive-footer">
+                <button class="btn btn-ghost btn-sm" onclick="askArchive()">查询：本学期数学提升情况</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- GOV -->
-      <div id="view-gov" class="view-container gov-container">
+        <!-- QA -->
+        <div id="student-qa" class="student-page">
+          <div class="qa-layout">
+            <div class="qa-card">
+              <div class="card-head">
+                <div class="card-title">即时自主学习问答</div>
+                <div class="card-sub">文字 / 拍照 / 语音（演示为文字）</div>
+              </div>
+
+              <div class="qa-chat" id="qa-chat">
+                <div class="qa-msg ai">
+                  <div class="qa-bubble">
+                    我是你的学习伴侣。你可以问：<b>“这道分数除法怎么做？”</b> 或 <b>“帮我改作文”</b>。
+                  </div>
+                </div>
+              </div>
+
+              <div class="qa-input">
+                <input id="qa-input" type="text"
+                  placeholder="输入问题：如“20 ÷ 3/4 为什么错？”"
+                  onkeypress="if(event.key==='Enter') sendQA()" />
+                <button class="btn btn-primary" onclick="sendQA()">提问</button>
+              </div>
+
+              <div class="qa-suggest">
+                <div class="qa-chip" onclick="quickAsk('解释分数除法的关键步骤')">分数除法步骤</div>
+                <div class="qa-chip" onclick="quickAsk('给我3道同结构变式题')">同结构变式题</div>
+                <div class="qa-chip" onclick="quickAsk('帮我把这段作文优化更通顺')">作文评改</div>
+                <div class="qa-chip" onclick="quickAsk('把错题归档到错题本')">错题归档</div>
+              </div>
+            </div>
+
+            <div class="qa-side">
+              <div class="student-card">
+                <div class="card-head">
+                  <div class="card-title">错题本（自动归档）</div>
+                  <div class="card-sub">按知识点聚类 · 一键巩固</div>
+                </div>
+                <div id="wrongbook" class="wrongbook"></div>
+              </div>
+
+              <div class="student-card">
+                <div class="card-head">
+                  <div class="card-title">个性化延伸学习</div>
+                  <div class="card-sub">基于提问内容推荐资源</div>
+                </div>
+                <div id="extend-reco" class="extend-reco"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================
+           GOV
+      ========================== -->
+      <section id="view-gov" class="view-container gov-container">
         <div class="gov-overlay">
-          <div class="gov-title">🏙️ 区域教育大脑</div>
+          <h2>🏙️ 区域教育大脑</h2>
           <div class="gov-metric">
-            <div class="gov-score">92.4%</div>
-            <div class="gov-sub">AI 备课覆盖率</div>
+            <div class="gov-metric-value">92.4%</div>
+            <div class="gov-metric-label">AI 备课覆盖率</div>
           </div>
         </div>
 
         <div class="live-feed">
-          <div class="feed-head">⚡ 实时动态</div>
+          <div class="feed-title">⚡ 实时动态</div>
           <div id="feed-list"></div>
         </div>
 
         <div class="map-stage">
           <div class="map-grid" id="map-grid"></div>
         </div>
-      </div>
+      </section>
+    </div>
+  </div>
 
-    </section>
-  </main>
+  <!-- Modal -->
+  <div id="modal" class="modal" style="display:none;">
+    <div class="modal-mask" onclick="closeModal()"></div>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div class="modal-title" id="modal-title">详情</div>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal()">关闭</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" onclick="closeModal()">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js?v=0.9.2"></script>
 </body>
 </html>
