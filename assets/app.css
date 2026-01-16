@@ -929,3 +929,14 @@ body{
   .home-hero h1{ font-size:34px; }
   .card-grid{ grid-template-columns:1fr; }
 }
+/* Logo 文本不截断：允许两行展示 */
+.logo-area { gap: 10px; }
+.logo-text { min-width: 0; }
+.logo-title {
+  white-space: normal;
+  line-height: 1.15;
+}
+.logo-sub {
+  white-space: normal;
+  line-height: 1.15;
+}
