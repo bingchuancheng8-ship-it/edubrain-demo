@@ -1,6 +1,7 @@
 /* =========================================================
    AI EduBrain Demo v0.9.2
    - 稳定基线 + 教师页「趋势图 + 班级分层 + 异常钻取」真联动
+   - 学生端升级：成长档案真实 UI（能力雷达 + 周趋势 + 档案沉淀 + 即时答疑）
    ========================================================= */
 
 (function () {
@@ -16,6 +17,10 @@
     anomalyFilter: "all", // all | missing | error | time
     isScanning: false,
     feedTimer: null,
+
+    // student
+    studentTab: "growth", // growth | qa
+    currentStudentId: "S-01",
   };
 
   const Trend = {
@@ -26,11 +31,11 @@
   // “每天一份班级画像”，用于联动（趋势点 -> 分层 / 异常 / KPI）
   const DailyClassData = [
     buildDay(0, { A: 8, B: 12, C: 12 }, [
-      { id: "S-01", name: "宋扬", tier: "C", type: "missing", reason: "本次作业缺交", impact: "掌握度回落", hint: "建议当日补交 + 错题复盘" },
+      { id: "S-01", name: "宋扬", tier: "C", type: "missing", reason: "本次作业缺交", impact: "掌握度回落", hint: "建议当日补交+错题复盘" },
       { id: "S-02", name: "高航", tier: "C", type: "error", reason: "分数÷分数错误率高", impact: "应用题建模失败", hint: "先做3组基础计算再迁移" },
     ]),
     buildDay(1, { A: 9, B: 13, C: 10 }, [
-      { id: "S-03", name: "陈希", tier: "B", type: "time", reason: "完成时长异常偏长", impact: "卡在步骤转换", hint: "建议口头讲解 + 步骤模板" },
+      { id: "S-03", name: "陈希", tier: "B", type: "time", reason: "完成时长异常偏长", impact: "卡在步骤转换", hint: "建议口头讲解+步骤模板" },
     ]),
     buildDay(2, { A: 7, B: 15, C: 10 }, [
       { id: "S-04", name: "王铭", tier: "B", type: "error", reason: "线段图建模不稳定", impact: "易错题集中", hint: "给2道同结构变式题" },
@@ -40,7 +45,7 @@
       { id: "S-06", name: "周一帆", tier: "A", type: "error", reason: "拔高题失分集中", impact: "冲A+受阻", hint: "补充两道综合题变式" },
     ]),
     buildDay(4, { A: 10, B: 14, C: 8 }, [
-      { id: "S-07", name: "韩朔", tier: "C", type: "time", reason: "作业时长偏短", impact: "疑似敷衍/跳步", hint: "建议抽查过程 + 二次订正" },
+      { id: "S-07", name: "韩朔", tier: "C", type: "time", reason: "作业时长偏短", impact: "疑似敷衍/跳步", hint: "建议抽查过程+二次订正" },
     ]),
     buildDay(5, { A: 10, B: 15, C: 7 }, []),
     buildDay(6, { A: 9, B: 14, C: 9 }, [
@@ -50,6 +55,7 @@
 
   function buildDay(dayIndex, tiers, anomalies) {
     const mastery = Trend.values[dayIndex];
+    const total = tiers.A + tiers.B + tiers.C;
     const marked = Math.round(16 + (dayIndex * 2.2));
     return {
       dayIndex,
@@ -60,6 +66,126 @@
       anomalies,
     };
   }
+
+  /** --------------------------
+   *  Student Mock Data
+   *  -------------------------- */
+  const Students = {
+    "S-01": {
+      id: "S-01",
+      name: "宋扬",
+      grade: "七年级",
+      streak: 12,
+      radar: {
+        labels: ["计算", "建模", "几何推理", "阅读理解", "表达", "学习习惯"],
+        current: [58, 52, 60, 66, 62, 63],
+        target:  [70, 68, 72, 72, 70, 72],
+      },
+      weekly: {
+        mastery: [68, 70, 69, 71, 73, 75, 76],
+        wrong:   [3,  2,  4,  3,  3,  2,  1],
+        minutes: [18, 22, 16, 20, 24, 21, 21],
+      },
+      gaps: [
+        "本周「建模」偏弱：建议先用线段图把数量关系画清楚再列式。",
+        "「计算」易在分数除法出错：先做 3 组基础计算再迁移应用题。",
+        "学习习惯较稳定：建议保持每日 20 分钟巩固节奏。",
+      ],
+      archive: [
+        { date: "第3周", title: "入学学段适配诊断", desc: "知识掌握度 62%，重点薄弱：分数除法与应用题建模。" },
+        { date: "第4周", title: "能力对标与差距明确", desc: "对标七年级标准：建模/计算需提升，阅读理解达标。" },
+        { date: "第5周", title: "周度学情复盘", desc: "错题集中在分数÷分数，建议优先补足基础计算。"},
+      ],
+      wrongbook: [
+        { topic: "分数除法", count: 5, hint: "关键：乘以倒数；先化简再计算" },
+        { topic: "应用题建模（线段图）", count: 3, hint: "先找单位 1，再找对应分率" },
+      ],
+    },
+
+    "S-02": {
+      id: "S-02",
+      name: "高航",
+      grade: "七年级",
+      streak: 9,
+      radar: {
+        labels: ["计算", "建模", "几何推理", "阅读理解", "表达", "学习习惯"],
+        current: [50, 48, 55, 60, 58, 55],
+        target:  [70, 68, 72, 72, 70, 72],
+      },
+      weekly: {
+        mastery: [60, 61, 60, 62, 64, 66, 65],
+        wrong:   [5,  5,  6,  5,  4,  4,  4],
+        minutes: [12, 16, 14, 15, 18, 18, 16],
+      },
+      gaps: [
+        "分数除法错误率仍偏高：建议每日 10 分钟基础计算打底。",
+        "建模存在跳步：建议按模板写清楚“已知/求/单位1”。",
+        "学习时长略波动：建议固定在晚饭后 20 分钟完成巩固任务。",
+      ],
+      archive: [
+        { date: "第3周", title: "入学学段适配诊断", desc: "掌握度 58%，薄弱点：分数除法与应用题。" },
+        { date: "第4周", title: "动态学习支撑推送", desc: "推送：分数除法专项微课 + 变式题 2 组。" },
+      ],
+      wrongbook: [
+        { topic: "分数÷分数", count: 6, hint: "先化简，再乘倒数；不要忘记约分" },
+        { topic: "单位1识别", count: 4, hint: "先找“谁的几分之几”中的“谁”" },
+      ],
+    },
+
+    "S-04": {
+      id: "S-04",
+      name: "王铭",
+      grade: "七年级",
+      streak: 14,
+      radar: {
+        labels: ["计算", "建模", "几何推理", "阅读理解", "表达", "学习习惯"],
+        current: [66, 60, 65, 62, 60, 70],
+        target:  [72, 70, 75, 72, 70, 74],
+      },
+      weekly: {
+        mastery: [66, 67, 68, 70, 71, 72, 73],
+        wrong:   [3,  3,  2,  2,  2,  1,  1],
+        minutes: [20, 19, 22, 20, 24, 21, 20],
+      },
+      gaps: [
+        "线段图建模偶发不稳定：建议多做 2 道同结构题巩固。",
+        "几何推理稳步提升：可加入 1 道拔高题训练迁移。",
+      ],
+      archive: [
+        { date: "第4周", title: "能力对标与差距明确", desc: "建模/表达需补齐，计算基本达标。" },
+      ],
+      wrongbook: [
+        { topic: "线段图建模", count: 2, hint: "先画单位1，再标分率与对应量" },
+      ],
+    },
+
+    "S-06": {
+      id: "S-06",
+      name: "周一帆",
+      grade: "七年级",
+      streak: 18,
+      radar: {
+        labels: ["计算", "建模", "几何推理", "阅读理解", "表达", "学习习惯"],
+        current: [75, 72, 78, 74, 70, 76],
+        target:  [78, 75, 82, 78, 75, 80],
+      },
+      weekly: {
+        mastery: [72, 73, 74, 75, 76, 77, 78],
+        wrong:   [2,  2,  2,  1,  2,  1,  1],
+        minutes: [25, 24, 26, 25, 26, 24, 24],
+      },
+      gaps: [
+        "拔高题失分集中：建议补 2 道综合变式（条件变化）训练稳态。",
+        "表达较好：可尝试“讲题”训练，提高迁移能力。",
+      ],
+      archive: [
+        { date: "第4周", title: "周度学情复盘", desc: "掌握度稳定上升，建议加强综合题变式训练。" },
+      ],
+      wrongbook: [
+        { topic: "综合应用题（条件变化）", count: 2, hint: "先列关系式，再检查单位1是否一致" },
+      ],
+    },
+  };
 
   /** --------------------------
    *  DOM Helpers
@@ -84,19 +210,6 @@
   }
 
   /** --------------------------
-   *  Modal
-   *  -------------------------- */
-  function openModal() {
-    const m = $("#modal");
-    if (m) m.style.display = "flex";
-  }
-
-  function closeModal() {
-    const m = $("#modal");
-    if (m) m.style.display = "none";
-  }
-
-  /** --------------------------
    *  View Switch
    *  -------------------------- */
   function switchView(id, navEl) {
@@ -116,13 +229,12 @@
     setText("#page-title", titles[id] || "工作区");
 
     // gov behavior
-    const top = $("#top-header");
     if (id === "gov") {
-      if (top) top.style.display = "none";
+      $("#top-header").style.display = "none";
       initMap();
       startFeed();
     } else {
-      if (top) top.style.display = "flex";
+      $("#top-header").style.display = "flex";
       stopFeed();
       clearMap();
     }
@@ -130,6 +242,11 @@
     // teacher init
     if (id === "teacher") {
       ensureTeacherMounted();
+    }
+
+    // student init
+    if (id === "student") {
+      ensureStudentMounted();
     }
   }
 
@@ -151,39 +268,33 @@
     }
 
     // toggle views
-    const views = {
-      prep: "#prep-view",
-      mark: "#mark-view",
-      ana: "#ana-view",
-    };
-    Object.values(views).forEach((v) => {
+    const map = { prep: "#prep-view", mark: "#mark-view", ana: "#ana-view" };
+    Object.values(map).forEach((v) => {
       const el = $(v);
       if (el) el.classList.remove("active");
     });
-    const active = $(views[mode]);
+    const active = $(map[mode]);
     if (active) active.classList.add("active");
 
     if (mode === "mark") resetOCR();
-    renderTeacherLinkedArea();
+    if (mode === "prep") renderLessonCard();
+    if (mode === "ana") renderTeacherLinkedArea();
   }
 
   /** --------------------------
    *  Home Scenario
    *  -------------------------- */
   function startScenario(type) {
-    const teacherNav = document.querySelector('[data-view="teacher"]') || $$(".nav-item")[1];
-    switchView("teacher", teacherNav);
-
+    switchView("teacher", document.querySelector('[data-view="teacher"]'));
     if (type === "prep") {
       setTeacherMode("prep");
       setTimeout(() => {
-        const input = $("#teacher-input");
-        if (input) input.value = "生成分数应用题教案并补齐薄弱点强化环节";
+        $("#teacher-input").value = "生成分数应用题教案并补齐薄弱点强化环节";
         triggerMsg();
-      }, 260);
+      }, 250);
     } else if (type === "mark") {
       setTeacherMode("mark");
-      addMsg("ai", "已进入批改模式：点击右侧模拟扫描，会生成异常并联动到趋势/分层/异常钻取。");
+      addMsg("ai", "已进入批改模式：点击右侧模拟扫描，将生成异常并联动到分析区。");
     } else {
       setTeacherMode("prep");
     }
@@ -195,10 +306,15 @@
 
     if (v.includes("批改") || v.includes("作业")) return startScenario("mark");
     if (v.includes("趋势") || v.includes("分层") || v.includes("异常") || v.includes("分析")) {
-      const teacherNav = document.querySelector('[data-view="teacher"]') || $$(".nav-item")[1];
-      switchView("teacher", teacherNav);
+      switchView("teacher", document.querySelector('[data-view="teacher"]'));
       setTeacherMode("ana");
-      addMsg("ai", "已为你打开联动分析：点击趋势点位、分层卡片、异常列表，可进行联动钻取。");
+      addMsg("ai", "已打开联动分析：点击趋势点位、分层卡片、异常列表可进行联动钻取。");
+      return;
+    }
+    if (v.includes("成长") || v.includes("学生档案")) {
+      switchView("student", document.querySelector('[data-view="student"]'));
+      setStudentTab("growth");
+      showToast("已进入学生成长档案");
       return;
     }
 
@@ -228,7 +344,7 @@
 
     setTimeout(() => {
       if (q.includes("趋势") || q.includes("分层") || q.includes("异常") || q.includes("分析")) {
-        addMsg("ai", "已加载近7天趋势与班级画像。你可以点击折线点位联动查看分层变化与异常列表。");
+        addMsg("ai", "已加载近7天趋势与班级画像。点击趋势点位将联动刷新分层与异常列表。");
         setTeacherMode("ana");
         renderTeacherLinkedArea();
         return;
@@ -236,37 +352,77 @@
 
       if (q.includes("教案") || q.includes("备课") || q.includes("分数")) {
         addMsg("ai", "已生成《分数应用题》教学设计（示例），并根据班级薄弱点插入强化环节。");
-        renderTeacherLinkedArea();
+        setTeacherMode("prep");
+        renderLessonCard(true);
         return;
       }
 
       addMsg("ai", "收到。我已为你更新右侧联动分析区（趋势/分层/异常）。");
+      setTeacherMode("ana");
       renderTeacherLinkedArea();
     }, 320);
   }
 
   /** --------------------------
-   *  Teacher Linked Area
+   *  Lesson Card
+   *  -------------------------- */
+  function renderLessonCard(showResult = false) {
+    const placeholder = $("#prep-placeholder");
+    const result = $("#lesson-result");
+    if (!placeholder || !result) return;
+
+    if (!showResult) {
+      placeholder.style.display = "flex";
+      result.style.display = "none";
+      return;
+    }
+
+    placeholder.style.display = "none";
+    result.style.display = "block";
+    result.innerHTML = `
+      <div class="lesson-card">
+        <h2>📘 教学设计：分数应用题（示例）</h2>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-title">00:00 课堂导入</div>
+            <div class="tl-sub">生活“切蛋糕”情境，引入“单位1”概念</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-title">05:00 核心探究</div>
+            <div class="tl-sub">画线段图 → 识别单位1 → 列式求解</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-title">15:00 薄弱点强化</div>
+            <div class="tl-sub">分数÷分数：先化简 → 再乘倒数（3组基础计算）</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-title">25:00 变式训练</div>
+            <div class="tl-sub">2道同结构变式题：条件变化与单位1对齐</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:12px;"
+          onclick="showToast('已模拟导出：PPT（演示）')">✨ 导出 PPT</button>
+      </div>
+    `;
+  }
+
+  /** --------------------------
+   *  Teacher Linked Area (Trend <-> Tier <-> Anomaly)
    *  -------------------------- */
   function ensureTeacherMounted() {
-    // version badge
     const ver = $("#app-version");
     if (ver) ver.textContent = App.version;
-
     renderTeacherLinkedArea();
-    bindTeacherSideEventsOnce();
   }
 
   function renderTeacherLinkedArea() {
     const day = DailyClassData[App.trendIndex];
     if (!day) return;
 
-    // KPI
     setText("#kpi-marked", String(day.marked));
     setText("#kpi-mastery", `${day.mastery}%`);
     setText("#kpi-anomaly", String(day.anomalies.length));
 
-    // Trend label
     setText("#trend-day-label", Trend.labels[day.dayIndex]);
     setText("#trend-value-label", `${day.mastery}%`);
 
@@ -274,7 +430,7 @@
     const total = day.tiers.A + day.tiers.B + day.tiers.C;
     const rateA = Math.round((day.tiers.A / total) * 100);
     const rateB = Math.round((day.tiers.B / total) * 100);
-    const rateC = Math.max(0, 100 - rateA - rateB);
+    const rateC = 100 - rateA - rateB;
 
     setText("#tier-a-count", String(day.tiers.A));
     setText("#tier-b-count", String(day.tiers.B));
@@ -284,6 +440,7 @@
     setText("#tier-b-rate", `${rateB}%`);
     setText("#tier-c-rate", `${rateC}%`);
 
+    // bar width
     const barA = $("#tier-a-bar");
     const barB = $("#tier-b-bar");
     const barC = $("#tier-c-bar");
@@ -291,7 +448,7 @@
     if (barB) barB.style.width = `${Math.max(8, rateB)}%`;
     if (barC) barC.style.width = `${Math.max(8, rateC)}%`;
 
-    // tier highlight
+    // active tier highlight
     $$(".tier-row").forEach((el) => el.classList.remove("active"));
     if (App.tierFocus) {
       const idx = App.tierFocus === "A" ? 0 : App.tierFocus === "B" ? 1 : 2;
@@ -310,6 +467,7 @@
     const ctx = canvas.getContext("2d");
     const W = canvas.width;
     const H = canvas.height;
+
     ctx.clearRect(0, 0, W, H);
 
     const pad = { l: 34, r: 18, t: 16, b: 30 };
@@ -331,7 +489,10 @@
 
     const minY = 50;
     const maxY = 80;
-    function xAt(i) { return pad.l + (cw * i) / (Trend.values.length - 1); }
+
+    function xAt(i) {
+      return pad.l + (cw * i) / (Trend.values.length - 1);
+    }
     function yAt(v) {
       const t = (v - minY) / (maxY - minY);
       return pad.t + ch * (1 - t);
@@ -378,8 +539,8 @@
     Trend.values.forEach((v, i) => {
       const x = xAt(i);
       const y = yAt(v);
-      const isActive = i === App.trendIndex;
 
+      const isActive = i === App.trendIndex;
       ctx.save();
       ctx.fillStyle = isActive ? "rgba(79,70,229,1)" : "rgba(148,163,184,1)";
       ctx.beginPath();
@@ -422,24 +583,23 @@
       renderTeacherLinkedArea();
 
       addMsg("ai", `已切换到 <b>${Trend.labels[hit.i]}</b>：掌握度 <b>${Trend.values[hit.i]}%</b>。分层与异常已联动刷新。`);
-      showToast(`联动刷新：${Trend.labels[hit.i]} · ${Trend.values[hit.i]}%`);
     };
   }
 
   function selectTier(tier) {
     App.tierFocus = App.tierFocus === tier ? null : tier;
-    renderTeacherLinkedArea();
+    renderAnomalyList();
 
     const day = DailyClassData[App.trendIndex];
     if (!day) return;
+    const count = day.tiers[tier];
 
     if (App.tierFocus) {
-      addMsg("ai", `已聚焦 <b>${tier}组</b>（${day.tiers[tier]}人）。异常列表已按分层联动过滤。`);
-      showToast(`分层聚焦：${tier}组`);
+      addMsg("ai", `已聚焦 <b>${tier}组</b>（${count}人）。异常列表已按分层联动过滤。`);
     } else {
       addMsg("ai", "已取消分层聚焦，异常列表恢复为全班维度。");
-      showToast("分层聚焦：已取消");
     }
+    renderTeacherLinkedArea();
   }
 
   function setAnomalyFilter(filter, el) {
@@ -447,7 +607,6 @@
     $$(".chip").forEach((c) => c.classList.remove("active"));
     if (el) el.classList.add("active");
     renderAnomalyList();
-    showToast(`异常筛选：${tagFor(filter).text || "全部"}`);
   }
 
   function renderAnomalyList() {
@@ -460,8 +619,12 @@
 
     let items = [...day.anomalies];
 
-    if (App.anomalyFilter !== "all") items = items.filter((x) => x.type === App.anomalyFilter);
-    if (App.tierFocus) items = items.filter((x) => x.tier === App.tierFocus);
+    if (App.anomalyFilter !== "all") {
+      items = items.filter((x) => x.type === App.anomalyFilter);
+    }
+    if (App.tierFocus) {
+      items = items.filter((x) => x.tier === App.tierFocus);
+    }
 
     if (items.length === 0) {
       const empty = document.createElement("div");
@@ -481,8 +644,8 @@
     items.forEach((x) => {
       const item = document.createElement("div");
       item.className = "anomaly-item";
-
       const tag = tagFor(x.type);
+
       item.innerHTML = `
         <div class="anomaly-top">
           <div class="anomaly-name">${x.name} <span style="color:#64748b;font-weight:900;">· ${x.tier}组</span></div>
@@ -490,6 +653,7 @@
         </div>
         <div class="anomaly-sub">${x.reason} · 影响：${x.impact}</div>
       `;
+
       item.onclick = () => openAnomalyDetail(x);
       list.appendChild(item);
     });
@@ -499,7 +663,6 @@
     if (type === "missing") return { text: "缺交", cls: "orange" };
     if (type === "error") return { text: "错误率", cls: "red" };
     if (type === "time") return { text: "时长", cls: "blue" };
-    if (type === "all") return { text: "全部", cls: "blue" };
     return { text: "异常", cls: "red" };
   }
 
@@ -528,25 +691,29 @@
         <div style="font-weight:1000;margin-bottom:6px;">建议动作（可落地）</div>
         <ul style="margin:0;padding-left:18px;color:#334155;">
           <li>${x.hint}</li>
-          <li>生成 2 道同结构变式题（先基础→再迁移），并在课堂抽查关键步骤。</li>
-          <li>若连续 2 次出现该异常，触发「家校协同提醒 + 低门槛补救任务」。</li>
+          <li>建议生成 2 道同结构变式题（先基础→再迁移），并在课堂抽查关键步骤。</li>
+          <li>若连续 2 次出现该异常，建议触发「家校协同提醒 + 低门槛补救任务」。</li>
         </ul>
 
         <div style="margin-top:14px;padding:12px;border-radius:16px;border:1px dashed rgba(79,70,229,0.22);background:#f7f8ff;">
           <b>一键生成话术（示例）</b><br/>
           “我发现你在 <b>${x.reason}</b> 这里卡住了，我们先用 3 组基础计算把手感找回来，再做 2 道迁移应用题。你只要把第一步写清楚就成功一半了。”
         </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+          <button class="btn btn-primary btn-sm" onclick="openStudentProfile('${x.id}')">跳转学生成长档案</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟下发：补救练习（演示）')">下发补救练习</button>
+        </div>
       `;
     }
 
     openModal();
-    addMsg("ai", `已为你打开 <b>${x.name}</b> 的异常钻取详情（联动示例）。`);
+    addMsg("ai", `已为你打开 <b>${x.name}</b> 的异常钻取详情；可一键跳转学生成长档案。`);
   }
 
   function openAnomalyDrawer() {
     const day = DailyClassData[App.trendIndex];
     setText("#modal-title", `异常预警 · ${Trend.labels[day.dayIndex]}（共${day.anomalies.length}条）`);
-
     const body = $("#modal-body");
     if (body) {
       body.innerHTML = `
@@ -559,15 +726,10 @@
         </div>
         <div style="font-weight:1000;margin-bottom:6px;">异常摘要</div>
         <ul style="margin:0;padding-left:18px;color:#334155;">
-          ${
-            day.anomalies.length
-              ? day.anomalies.map((a) => `<li><b>${a.name}</b> · ${tagFor(a.type).text} · ${a.reason}</li>`).join("")
-              : "<li>暂无异常</li>"
-          }
+          ${day.anomalies.map((a) => `<li><b>${a.name}</b> · ${tagFor(a.type).text} · ${a.reason}</li>`).join("")}
         </ul>
       `;
     }
-
     openModal();
   }
 
@@ -575,13 +737,13 @@
    *  OCR Simulation
    *  -------------------------- */
   function resetOCR() {
-    App.isScanning = false;
     const tip = $("#ocr-tip");
     const laser = $("#ocr-laser");
     const err = $("#ocr-error");
     if (tip) tip.style.display = "block";
     if (laser) laser.style.display = "none";
     if (err) err.style.display = "none";
+    App.isScanning = false;
   }
 
   function runOCR() {
@@ -600,109 +762,492 @@
       if (laser) laser.style.display = "none";
       if (err) err.style.display = "block";
 
-      // 写入“当日异常”
+      // 模拟：扫描触发一个新的异常进入当天数据（联动体现）
       const day = DailyClassData[App.trendIndex];
       if (day) {
-        const exists = day.anomalies.some((a) => a.id === "OCR-01");
-        if (!exists) {
-          day.anomalies.unshift({
-            id: "OCR-01",
-            name: "赵宁",
-            tier: "C",
-            type: "error",
-            reason: "第2题分数除法步骤错误（OCR识别）",
-            impact: "同类题迁移失败，易形成连错",
-            hint: "建议：错因定位→示范→同结构变式题巩固",
-          });
-        }
+        day.anomalies = [
+          ...day.anomalies,
+          { id: "S-01", name: "宋扬", tier: "C", type: "error", reason: "分数÷分数步骤写错", impact: "应用题列式错误", hint: "先做基础计算 3 组再做 2 道迁移题" },
+        ];
       }
 
-      addMsg("ai", "OCR 扫描完成：检测到共性错误（第2题分数除法）。已生成异常并联动到分析区。");
-      showToast("OCR：异常已写入并联动刷新");
+      addMsg("ai", "已完成扫描：检测到共性错误（分数÷分数）与个体异常（补救层）。建议进入分析联动查看。");
+      showToast("扫描完成：异常已生成并联动");
+      App.isScanning = false;
 
-      // 自动切到分析页
+      // 自动切到分析联动，增强“产品感”
       setTeacherMode("ana");
       renderTeacherLinkedArea();
-
-      App.isScanning = false;
     }, 2000);
   }
 
   /** --------------------------
-   *  Teacher Events
+   *  Modal
    *  -------------------------- */
-  function bindTeacherSideEventsOnce() {
-    if (bindTeacherSideEventsOnce._done) return;
-    bindTeacherSideEventsOnce._done = true;
+  function openModal() {
+    const m = $("#modal");
+    if (m) m.style.display = "block";
+  }
+  function closeModal() {
+    const m = $("#modal");
+    if (m) m.style.display = "none";
+  }
 
-    // tier click
-    const rowA = $("#tier-a");
-    const rowB = $("#tier-b");
-    const rowC = $("#tier-c");
-    if (rowA) rowA.onclick = () => selectTier("A");
-    if (rowB) rowB.onclick = () => selectTier("B");
-    if (rowC) rowC.onclick = () => selectTier("C");
+  /** --------------------------
+   *  Student: Mount & Render
+   *  -------------------------- */
+  function ensureStudentMounted() {
+    const s = Students[App.currentStudentId] || Students["S-01"];
+    if (!s) return;
 
-    // anomaly filter chips
-    $$(".chip").forEach((chip) => {
-      chip.onclick = () => setAnomalyFilter(chip.dataset.filter || "all", chip);
-    });
+    // 同步 select
+    const sel = $("#student-select");
+    if (sel) sel.value = s.id;
 
-    // KPI anomaly click -> summary modal
-    const kpiAn = $("#kpi-anomaly-card");
-    if (kpiAn) kpiAn.onclick = () => openAnomalyDrawer();
+    setText("#student-streak", String(s.streak));
+    setStudentTab(App.studentTab);
 
-    // modal close
-    const closeBtn = $("#modal-close");
-    if (closeBtn) closeBtn.onclick = closeModal;
+    renderStudentGrowth();
+    renderStudentQA();
+  }
 
-    const modal = $("#modal");
-    if (modal) {
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-      });
+  function onStudentChange(id) {
+    App.currentStudentId = id;
+    ensureStudentMounted();
+    showToast("已切换学生档案");
+  }
+
+  function setStudentTab(tab) {
+    App.studentTab = tab;
+
+    const gBtn = $("#tab-growth");
+    const qBtn = $("#tab-qa");
+    if (gBtn && qBtn) {
+      gBtn.classList.toggle("active", tab === "growth");
+      qBtn.classList.toggle("active", tab === "qa");
     }
 
-    // OCR click
-    const ocrStage = $("#ocr-stage");
-    if (ocrStage) ocrStage.onclick = runOCR;
+    const growth = $("#student-growth");
+    const qa = $("#student-qa");
+    if (growth) growth.classList.toggle("active", tab === "growth");
+    if (qa) qa.classList.toggle("active", tab === "qa");
+  }
+
+  function renderStudentGrowth() {
+    const st = Students[App.currentStudentId];
+    if (!st) return;
+
+    // gap list
+    const gap = $("#gap-list");
+    if (gap) {
+      gap.innerHTML = st.gaps.map((x) => `<li>${x}</li>`).join("");
+    }
+
+    // weekly KPIs
+    const m = st.weekly.mastery[st.weekly.mastery.length - 1];
+    const w = st.weekly.wrong.reduce((a, b) => a + b, 0);
+    const min = st.weekly.minutes.reduce((a, b) => a + b, 0);
+    setText("#wk-mastery", `${m}%`);
+    setText("#wk-wrong", String(w));
+    setText("#wk-min", String(min));
+
+    // archive
+    const arc = $("#archive-list");
+    if (arc) {
+      arc.innerHTML = st.archive.map((a) => `
+        <div class="archive-item">
+          <div class="archive-title">${a.date} · ${a.title}</div>
+          <div class="archive-sub">${a.desc}</div>
+        </div>
+      `).join("");
+    }
+
+    // resources init
+    const rr = $("#resource-row");
+    if (rr && !rr.dataset.inited) {
+      rr.dataset.inited = "1";
+      rr.innerHTML = "";
+    }
+
+    drawRadarChart();
+    drawWeekChart();
+  }
+
+  function drawRadarChart() {
+    const st = Students[App.currentStudentId];
+    const c = $("#radar-canvas");
+    if (!c || !st) return;
+
+    const ctx = c.getContext("2d");
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const cx = W / 2;
+    const cy = H / 2 + 6;
+    const r = Math.min(W, H) * 0.34;
+    const labels = st.radar.labels;
+    const n = labels.length;
+
+    // background rings
+    ctx.save();
+    ctx.strokeStyle = "rgba(226,232,240,1)";
+    ctx.lineWidth = 1;
+    for (let k = 1; k <= 4; k++) {
+      const rr = (r * k) / 4;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const ang = (Math.PI * 2 * i) / n - Math.PI / 2;
+        const x = cx + rr * Math.cos(ang);
+        const y = cy + rr * Math.sin(ang);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // axes
+    ctx.save();
+    ctx.strokeStyle = "rgba(226,232,240,1)";
+    for (let i = 0; i < n; i++) {
+      const ang = (Math.PI * 2 * i) / n - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + r * Math.cos(ang), cy + r * Math.sin(ang));
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    function poly(vals, stroke, fill) {
+      ctx.save();
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const ang = (Math.PI * 2 * i) / n - Math.PI / 2;
+        const vv = vals[i] / 100;
+        const x = cx + r * vv * Math.cos(ang);
+        const y = cy + r * vv * Math.sin(ang);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2.5;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // target
+    poly(st.radar.target, "rgba(148,163,184,1)", "rgba(148,163,184,0.08)");
+    // current
+    poly(st.radar.current, "rgba(79,70,229,1)", "rgba(79,70,229,0.16)");
+
+    // labels
+    ctx.save();
+    ctx.fillStyle = "rgba(100,116,139,1)";
+    ctx.font = "bold 12px -apple-system,BlinkMacSystemFont,PingFang SC";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (let i = 0; i < n; i++) {
+      const ang = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const x = cx + (r + 18) * Math.cos(ang);
+      const y = cy + (r + 18) * Math.sin(ang);
+      ctx.fillText(labels[i], x, y);
+    }
+    ctx.restore();
+  }
+
+  function drawWeekChart() {
+    const st = Students[App.currentStudentId];
+    const canvas = $("#week-canvas");
+    if (!canvas || !st) return;
+
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = { l: 34, r: 18, t: 16, b: 30 };
+    const cw = W - pad.l - pad.r;
+    const ch = H - pad.t - pad.b;
+
+    // grid
+    ctx.save();
+    ctx.strokeStyle = "rgba(231,236,245,1)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.t + (ch * i) / 4;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, y);
+      ctx.lineTo(W - pad.r, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const values = st.weekly.mastery;
+    const minY = 55, maxY = 85;
+
+    function xAt(i) {
+      return pad.l + (cw * i) / (values.length - 1);
+    }
+    function yAt(v) {
+      const t = (v - minY) / (maxY - minY);
+      return pad.t + ch * (1 - t);
+    }
+
+    // area
+    ctx.save();
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const x = xAt(i);
+      const y = yAt(v);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(xAt(values.length - 1), pad.t + ch);
+    ctx.lineTo(xAt(0), pad.t + ch);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+    grad.addColorStop(0, "rgba(99,102,241,0.22)");
+    grad.addColorStop(1, "rgba(99,102,241,0.02)");
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+
+    // line
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(79,70,229,1)";
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const x = xAt(i);
+      const y = yAt(v);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // points
+    ctx.save();
+    values.forEach((v, i) => {
+      const x = xAt(i);
+      const y = yAt(v);
+      ctx.fillStyle = "rgba(79,70,229,1)";
+      ctx.beginPath();
+      ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // x labels
+    ctx.save();
+    ctx.fillStyle = "rgba(100,116,139,1)";
+    ctx.font = "bold 11px -apple-system,BlinkMacSystemFont,PingFang SC";
+    ctx.textAlign = "center";
+    Trend.labels.forEach((lb, i) => {
+      ctx.fillText(lb.replace("周", ""), xAt(i), H - 10);
+    });
+    ctx.restore();
+  }
+
+  function generateWeeklyReview() {
+    const st = Students[App.currentStudentId];
+    if (!st) return;
+
+    const last = st.weekly.mastery[st.weekly.mastery.length - 1];
+    const wrongSum = st.weekly.wrong.reduce((a, b) => a + b, 0);
+
+    st.archive = [
+      ...st.archive,
+      {
+        date: "本周",
+        title: "周度学情复盘（自动生成）",
+        desc: `本周掌握度 ${last}%，错题 ${wrongSum} 道。建议：优先巩固分数÷分数基础计算，再挑战 2 道迁移应用题。`,
+      },
+    ];
+
+    renderStudentGrowth();
+    showToast("周度复盘已沉淀到成长档案");
+  }
+
+  function recommendResources() {
+    const rr = $("#resource-row");
+    const st = Students[App.currentStudentId];
+    if (!rr || !st) return;
+
+    rr.innerHTML = `
+      <div class="res-card">
+        <div class="res-title">几何推理专项微课</div>
+        <div class="res-sub">适配七年级 · 10分钟</div>
+        <div class="res-tag">推荐学习</div>
+      </div>
+      <div class="res-card">
+        <div class="res-title">分数除法基础计算</div>
+        <div class="res-sub">3组巩固练习 · 8分钟</div>
+        <div class="res-tag">优先补救</div>
+      </div>
+      <div class="res-card">
+        <div class="res-title">同结构变式题（2道）</div>
+        <div class="res-sub">应用题迁移训练 · 12分钟</div>
+        <div class="res-tag">进阶挑战</div>
+      </div>
+    `;
+    showToast("已推送资源到本周学习计划");
+  }
+
+  function askArchive() {
+    const st = Students[App.currentStudentId];
+    if (!st) return;
+    openModal();
+    setText("#modal-title", `档案查询 · ${st.name}`);
+    const body = $("#modal-body");
+    body.innerHTML = `
+      <div style="font-weight:1000;margin-bottom:8px;">本学期能力提升情况（示例）</div>
+      <div style="color:#334155;margin-bottom:10px;">
+        你在「学习习惯」与「几何推理」提升明显；「建模」仍是下一阶段重点。
+      </div>
+      <div style="padding:12px;border-radius:16px;background:#f8fafc;border:1px dashed rgba(79,70,229,0.18);">
+        建议路径：<b>基础计算 → 建模模板 → 迁移变式</b><br/>
+        每周目标：错题 ≤ 6，道道订正并能复述关键步骤。
+      </div>
+    `;
   }
 
   /** --------------------------
-   *  Student
+   *  Student QA
    *  -------------------------- */
-  function openVoiceModal() {
-    const m = $("#voice-modal");
-    if (m) m.style.display = "flex";
+  function renderStudentQA() {
+    const st = Students[App.currentStudentId];
+    if (!st) return;
+
+    // wrongbook
+    const wb = $("#wrongbook");
+    if (wb) {
+      wb.innerHTML = st.wrongbook.map((x) => `
+        <div class="wb-item">
+          <div class="wb-title">${x.topic} · ${x.count}题</div>
+          <div class="wb-sub">${x.hint}</div>
+          <div class="wb-btn" onclick="showToast('已开始巩固练习（演示）')">一键巩固</div>
+        </div>
+      `).join("");
+    }
+
+    // extend reco
+    const ex = $("#extend-reco");
+    if (ex) {
+      ex.innerHTML = `
+        <div class="wb-item">
+          <div class="wb-title">推荐：分数除法关键步骤</div>
+          <div class="wb-sub">先化简 → 再乘倒数 → 约分检查</div>
+          <div class="wb-btn" onclick="showToast('已打开微课（演示）')">查看微课</div>
+        </div>
+        <div class="wb-item">
+          <div class="wb-title">推荐：单位1识别练习</div>
+          <div class="wb-sub">适合应用题建模补齐</div>
+          <div class="wb-btn" onclick="showToast('已推送练习（演示）')">推送练习</div>
+        </div>
+      `;
+    }
   }
-  function closeVoiceModal() {
-    const m = $("#voice-modal");
-    if (m) m.style.display = "none";
-    alert("评分：98分！（示例）");
+
+  function qaAdd(role, html) {
+    const box = $("#qa-chat");
+    if (!box) return;
+    const div = document.createElement("div");
+    div.className = `qa-msg ${role}`;
+    div.innerHTML = `<div class="qa-bubble">${html}</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function sendQA() {
+    const input = $("#qa-input");
+    if (!input || !input.value.trim()) return;
+    const q = input.value.trim();
+    input.value = "";
+
+    qaAdd("user", q);
+
+    setTimeout(() => {
+      // 简单模拟：分数除法
+      if (q.includes("÷") || q.includes("除法") || q.includes("3/4") || q.includes("20")) {
+        qaAdd(
+          "ai",
+          `分步解析（示例）：<br/>
+          ① 把 “20 ÷ 3/4” 看成 “20 ÷ (3/4)”<br/>
+          ② 除以分数 = 乘以倒数 → 20 × 4/3<br/>
+          ③ 先化简再乘：20 × 4/3 = 80/3<br/><br/>
+          <b>易错点：</b>不要把 3/4 直接变成 4/3 后忘记“乘”。<br/>
+          我已把这类错题归档到错题本，建议你做 3 道同结构巩固题。`
+        );
+        showToast("答疑完成：错题已归档（演示）");
+        return;
+      }
+
+      // 作文评改模拟
+      if (q.includes("作文") || q.includes("通顺") || q.includes("修改")) {
+        qaAdd(
+          "ai",
+          `作文评改（示例）：<br/>
+          ① 结构：建议补充“起因→经过→结果”三段式<br/>
+          ② 语言：把重复词替换为同义表达，减少口语化<br/>
+          ③ 逻辑：段落之间加“因此/同时/最后”衔接词<br/><br/>
+          你可以继续追问：<b>“帮我重写第2段”</b>`
+        );
+        showToast("已生成评改建议（演示）");
+        return;
+      }
+
+      qaAdd("ai", `我理解你的问题。建议先明确：<b>已知条件</b>、<b>求什么</b>、<b>单位1</b>。你也可以发我题目关键步骤，我帮你逐步纠错。`);
+    }, 350);
+  }
+
+  function quickAsk(text) {
+    const input = $("#qa-input");
+    if (!input) return;
+    input.value = text;
+    sendQA();
   }
 
   /** --------------------------
-   *  Gov Dashboard
+   *  Teacher -> Student Profile Jump
+   *  -------------------------- */
+  function openStudentProfile(studentId) {
+    if (studentId && Students[studentId]) {
+      App.currentStudentId = studentId;
+    }
+    switchView("student", document.querySelector('[data-view="student"]'));
+    setStudentTab("growth");
+    ensureStudentMounted();
+    showToast("已从异常钻取跳转到学生成长档案");
+  }
+
+  /** --------------------------
+   *  Gov
    *  -------------------------- */
   function initMap() {
     const grid = $("#map-grid");
     if (!grid) return;
-
     grid.innerHTML = "";
-    for (let i = 0; i < 56; i++) {
+    for (let i = 0; i < 60; i++) {
       const bar = document.createElement("div");
-      const isWarn = Math.random() > 0.84;
-      const h = Math.random() * 220 + 40;
-
-      bar.className = "data-bar" + (isWarn ? " warning" : "");
+      const isWarn = Math.random() > 0.85;
+      const h = Math.random() * 250 + 50;
+      bar.className = "data-bar " + (isWarn ? "warning" : "");
       bar.style.left = Math.random() * 1100 + 50 + "px";
       bar.style.top = Math.random() * 1100 + 50 + "px";
-      bar.style.height = "10px";
       grid.appendChild(bar);
 
       setTimeout(() => {
         bar.style.height = h + "px";
-      }, 100 + Math.random() * 800);
+        bar.style.transform = `translateZ(${h}px)`;
+      }, 100 + Math.random() * 1000);
     }
   }
 
@@ -714,7 +1259,6 @@
   function startFeed() {
     const list = $("#feed-list");
     if (!list) return;
-
     const schools = ["第一中学", "实验小学", "育才学校", "高新一小"];
     const acts = ["生成了数学教案", "发布了分层作业", "触发了作业量预警", "查看了学生档案"];
 
@@ -724,63 +1268,57 @@
       d.className = "feed-item";
       const s = schools[Math.floor(Math.random() * schools.length)];
       const a = acts[Math.floor(Math.random() * acts.length)];
-      d.innerHTML = `<span style="color:#38bdf8">[${s}]</span> 李老师 ${a}`;
+      d.innerHTML = `<span style="color:#38bdf8;font-weight:900;">[${s}]</span> 李老师 ${a}`;
       list.prepend(d);
       if (list.children.length > 5) list.removeChild(list.lastChild);
     }, 1800);
   }
 
   function stopFeed() {
-    if (App.feedTimer) {
-      clearInterval(App.feedTimer);
-      App.feedTimer = null;
-    }
+    if (App.feedTimer) clearInterval(App.feedTimer);
+    App.feedTimer = null;
   }
 
   /** --------------------------
-   *  Init
+   *  Expose to window (for inline onclick)
    *  -------------------------- */
-  function bindGlobal() {
-    const homeInput = $("#home-input");
-    if (homeInput) {
-      homeInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") startScenarioFromHome();
-      });
-    }
-
-    const teacherInput = $("#teacher-input");
-    if (teacherInput) {
-      teacherInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") triggerMsg();
-      });
-    }
-  }
-
-  function boot() {
-    const ver = $("#app-version");
-    if (ver) ver.textContent = App.version;
-
-    bindGlobal();
-
-    if ($("#view-teacher")?.classList.contains("active")) ensureTeacherMounted();
-    if ($("#view-gov")?.classList.contains("active")) {
-      initMap();
-      startFeed();
-    }
-  }
-
-  // expose to inline onclick
   window.switchView = switchView;
   window.setTeacherMode = setTeacherMode;
   window.startScenario = startScenario;
   window.startScenarioFromHome = startScenarioFromHome;
   window.triggerMsg = triggerMsg;
+
+  window.selectTier = selectTier;
+  window.setAnomalyFilter = setAnomalyFilter;
+  window.openAnomalyDrawer = openAnomalyDrawer;
   window.runOCR = runOCR;
 
-  window.openVoiceModal = openVoiceModal;
-  window.closeVoiceModal = closeVoiceModal;
-
+  window.openModal = openModal;
   window.closeModal = closeModal;
 
-  document.addEventListener("DOMContentLoaded", boot);
+  window.onStudentChange = onStudentChange;
+  window.setStudentTab = setStudentTab;
+  window.generateWeeklyReview = generateWeeklyReview;
+  window.recommendResources = recommendResources;
+  window.askArchive = askArchive;
+
+  window.sendQA = sendQA;
+  window.quickAsk = quickAsk;
+
+  window.openStudentProfile = openStudentProfile;
+  window.showToast = showToast;
+
+  /** --------------------------
+   *  Boot
+   *  -------------------------- */
+  function boot() {
+    const ver = $("#app-version");
+    if (ver) ver.textContent = App.version;
+
+    // default render for trend & student charts if they exist
+    if ($("#trend-canvas")) renderTeacherLinkedArea();
+    if ($("#radar-canvas")) ensureStudentMounted();
+  }
+
+  boot();
 })();
