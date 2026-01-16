@@ -1,7 +1,7 @@
 /* =========================================================
-   AI EduBrain Demo v0.9.2
-   - 稳定基线 + 教师页「趋势图 + 班级分层 + 异常钻取」真联动
-   - 学生端升级：成长档案真实 UI（能力雷达 + 周趋势 + 档案沉淀 + 即时答疑）
+   AI EduBrain Demo v0.9.2 (Role-based)
+   - 角色隔离：教师/学生进入仅展示对应板块
+   - 教师异常钻取：在弹窗内查看学生档案（不跳学生端）
    ========================================================= */
 
 (function () {
@@ -9,8 +9,10 @@
    *   App State (Mock)
    *  -------------------------- */
   const App = {
-    version: "v0.9.2-demo",
+    version: "v0.9.2-role",
+    role: null, // 'teacher' | 'student'
     view: "home",
+
     teacherMode: "prep", // prep | mark | ana
     trendIndex: 6, // 0..6
     tierFocus: null, // 'A' | 'B' | 'C' | null
@@ -210,14 +212,139 @@
   }
 
   /** --------------------------
+   *  Role Control
+   *  -------------------------- */
+  function showRoleGate() {
+    const g = $("#role-gate");
+    if (g) g.style.display = "flex";
+  }
+
+  function hideRoleGate() {
+    const g = $("#role-gate");
+    if (g) g.style.display = "none";
+  }
+
+  function roleAllowedViews(role) {
+    // 你要求：老师进来只有老师板块
+    if (role === "teacher") return ["home", "teacher"];
+    if (role === "student") return ["home", "student"];
+    return ["home"];
+  }
+
+  function applyRoleUI() {
+    const role = App.role;
+    const allowed = roleAllowedViews(role);
+
+    // 左侧导航显示/隐藏
+    const navTeacher = $("#nav-teacher");
+    const navStudent = $("#nav-student");
+    const navGov = $("#nav-gov");
+
+    if (navTeacher) navTeacher.style.display = allowed.includes("teacher") ? "flex" : "none";
+    if (navStudent) navStudent.style.display = allowed.includes("student") ? "flex" : "none";
+    if (navGov) navGov.style.display = "none"; // demo 默认不放治理
+
+    // 首页卡片按角色隐藏（增强“只看到自己板块”的一致性）
+    const cPrep = $("#home-card-prep");
+    const cMark = $("#home-card-mark");
+    const cGrowth = $("#home-card-growth");
+
+    if (cPrep) cPrep.style.display = role === "teacher" ? "block" : "none";
+    if (cMark) cMark.style.display = role === "teacher" ? "block" : "none";
+    if (cGrowth) cGrowth.style.display = role === "student" ? "block" : "none";
+
+    // 首页提示
+    const tip = $("#home-role-tip");
+    if (tip) {
+      tip.style.display = "block";
+      if (role === "teacher") tip.innerHTML = `当前身份：<b>教师</b>。你将仅看到教师相关入口（备课/批改/学情联动）。`;
+      else if (role === "student") tip.innerHTML = `当前身份：<b>学生</b>。你将仅看到学生相关入口（成长档案/即时答疑）。`;
+      else tip.style.display = "none";
+    }
+
+    // 右下角用户信息
+    const avatar = $("#user-avatar");
+    const name = $("#user-name");
+    const sub = $("#user-sub");
+    if (role === "teacher") {
+      if (avatar) avatar.textContent = "李";
+      if (name) name.textContent = "李老师";
+      if (sub) sub.textContent = "数学组 · 七年级";
+    } else if (role === "student") {
+      const st = Students[App.currentStudentId] || Students["S-01"];
+      if (avatar) avatar.textContent = st.name.slice(0, 1);
+      if (name) name.textContent = st.name;
+      if (sub) sub.textContent = `${st.grade} · 学生`;
+    }
+  }
+
+  function setRole(role) {
+    App.role = role;
+    localStorage.setItem("edubrain_role", role);
+
+    applyRoleUI();
+    hideRoleGate();
+
+    // 自动跳到角色主页面
+    if (role === "teacher") {
+      switchView("teacher", document.querySelector('[data-view="teacher"]'));
+      setTeacherMode("ana");
+      showToast("已以教师身份进入");
+    } else {
+      switchView("student", document.querySelector('[data-view="student"]'));
+      setStudentTab("growth");
+      ensureStudentMounted();
+      showToast("已以学生身份进入");
+    }
+  }
+
+  function ensureRoleReady() {
+    const saved = localStorage.getItem("edubrain_role");
+    if (saved === "teacher" || saved === "student") {
+      App.role = saved;
+      applyRoleUI();
+      hideRoleGate();
+      // 如果用户刷新页面，回到角色默认页更自然
+      if (saved === "teacher") {
+        switchView("teacher", document.querySelector('[data-view="teacher"]'));
+        setTeacherMode("ana");
+      } else {
+        switchView("student", document.querySelector('[data-view="student"]'));
+        setStudentTab("growth");
+        ensureStudentMounted();
+      }
+      return;
+    }
+    showRoleGate();
+  }
+
+  function isViewAllowed(viewId) {
+    const allowed = roleAllowedViews(App.role);
+    return allowed.includes(viewId);
+  }
+
+  /** --------------------------
    *  View Switch
    *  -------------------------- */
   function switchView(id, navEl) {
+    // 角色隔离：不允许切入非本角色模块
+    if (!isViewAllowed(id)) {
+      showToast("当前身份无权访问该模块");
+      // 回落到本角色默认页
+      const fallback = App.role === "student" ? "student" : "teacher";
+      id = fallback;
+    }
+
     App.view = id;
 
     // nav active
     $$(".nav-item").forEach((el) => el.classList.remove("active"));
-    if (navEl) navEl.classList.add("active");
+    if (navEl && navEl.style.display !== "none") navEl.classList.add("active");
+    else {
+      // 如果 navEl 被隐藏，手动激活当前页对应 nav
+      const curNav = document.querySelector(`[data-view="${id}"]`);
+      if (curNav) curNav.classList.add("active");
+    }
 
     // view active
     $$(".view-container").forEach((el) => el.classList.remove("active"));
@@ -228,7 +355,7 @@
     const titles = { home: "首页入口", teacher: "教师工作台", student: "学习伴侣", gov: "治理驾驶舱" };
     setText("#page-title", titles[id] || "工作区");
 
-    // gov behavior
+    // gov behavior（当前 demo 隐藏，不启用）
     if (id === "gov") {
       $("#top-header").style.display = "none";
       initMap();
@@ -240,14 +367,10 @@
     }
 
     // teacher init
-    if (id === "teacher") {
-      ensureTeacherMounted();
-    }
+    if (id === "teacher") ensureTeacherMounted();
 
     // student init
-    if (id === "student") {
-      ensureStudentMounted();
-    }
+    if (id === "student") ensureStudentMounted();
   }
 
   /** --------------------------
@@ -285,6 +408,13 @@
    *  Home Scenario
    *  -------------------------- */
   function startScenario(type) {
+    // 角色隔离：老师只去教师，学生只去学生
+    if (App.role === "student") {
+      switchView("student", document.querySelector('[data-view="student"]'));
+      setStudentTab("growth");
+      return;
+    }
+
     switchView("teacher", document.querySelector('[data-view="teacher"]'));
     if (type === "prep") {
       setTeacherMode("prep");
@@ -302,23 +432,31 @@
 
   function startScenarioFromHome() {
     const v = ($("#home-input")?.value || "").trim();
-    if (!v) return startScenario("prep");
-
-    if (v.includes("批改") || v.includes("作业")) return startScenario("mark");
-    if (v.includes("趋势") || v.includes("分层") || v.includes("异常") || v.includes("分析")) {
-      switchView("teacher", document.querySelector('[data-view="teacher"]'));
-      setTeacherMode("ana");
-      addMsg("ai", "已打开联动分析：点击趋势点位、分层卡片、异常列表可进行联动钻取。");
-      return;
-    }
-    if (v.includes("成长") || v.includes("学生档案")) {
-      switchView("student", document.querySelector('[data-view="student"]'));
-      setStudentTab("growth");
-      showToast("已进入学生成长档案");
-      return;
+    if (!v) {
+      if (App.role === "student") {
+        switchView("student", document.querySelector('[data-view="student"]'));
+        setStudentTab("growth");
+        return;
+      }
+      return startScenario("prep");
     }
 
-    startScenario("prep");
+    if (App.role === "teacher") {
+      if (v.includes("批改") || v.includes("作业")) return startScenario("mark");
+      if (v.includes("趋势") || v.includes("分层") || v.includes("异常") || v.includes("分析")) {
+        switchView("teacher", document.querySelector('[data-view="teacher"]'));
+        setTeacherMode("ana");
+        addMsg("ai", "已打开联动分析：点击趋势点位、分层卡片、异常列表可进行联动钻取。");
+        return;
+      }
+      return startScenario("prep");
+    }
+
+    // student role
+    switchView("student", document.querySelector('[data-view="student"]'));
+    if (v.includes("答疑") || v.includes("提问")) setStudentTab("qa");
+    else setStudentTab("growth");
+    showToast("已进入学生模块");
   }
 
   /** --------------------------
@@ -410,8 +548,6 @@
    *  Teacher Linked Area (Trend <-> Tier <-> Anomaly)
    *  -------------------------- */
   function ensureTeacherMounted() {
-    const ver = $("#app-version");
-    if (ver) ver.textContent = App.version;
     renderTeacherLinkedArea();
   }
 
@@ -701,14 +837,14 @@
         </div>
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
-          <button class="btn btn-primary btn-sm" onclick="openStudentProfile('${x.id}')">跳转学生成长档案</button>
+          <button class="btn btn-primary btn-sm" onclick="openStudentProfile('${x.id}')">查看学生成长档案</button>
           <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟下发：补救练习（演示）')">下发补救练习</button>
         </div>
       `;
     }
 
     openModal();
-    addMsg("ai", `已为你打开 <b>${x.name}</b> 的异常钻取详情；可一键跳转学生成长档案。`);
+    addMsg("ai", `已打开 <b>${x.name}</b> 异常钻取；可在教师侧弹窗中查看学生档案。`);
   }
 
   function openAnomalyDrawer() {
@@ -775,7 +911,6 @@
       showToast("扫描完成：异常已生成并联动");
       App.isScanning = false;
 
-      // 自动切到分析联动，增强“产品感”
       setTeacherMode("ana");
       renderTeacherLinkedArea();
     }, 2000);
@@ -809,6 +944,9 @@
 
     renderStudentGrowth();
     renderStudentQA();
+
+    // 角色=学生时，侧边信息显示学生
+    if (App.role === "student") applyRoleUI();
   }
 
   function onStudentChange(id) {
@@ -869,17 +1007,15 @@
       rr.innerHTML = "";
     }
 
-    drawRadarChart();
-    drawWeekChart();
+    drawRadarChart($("#radar-canvas"), st);
+    drawWeekChart($("#week-canvas"), st);
   }
 
-  function drawRadarChart() {
-    const st = Students[App.currentStudentId];
-    const c = $("#radar-canvas");
-    if (!c || !st) return;
+  function drawRadarChart(canvas, st) {
+    if (!canvas || !st) return;
 
-    const ctx = c.getContext("2d");
-    const W = c.width, H = c.height;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
     const cx = W / 2;
@@ -888,7 +1024,7 @@
     const labels = st.radar.labels;
     const n = labels.length;
 
-    // background rings
+    // rings
     ctx.save();
     ctx.strokeStyle = "rgba(226,232,240,1)";
     ctx.lineWidth = 1;
@@ -959,9 +1095,7 @@
     ctx.restore();
   }
 
-  function drawWeekChart() {
-    const st = Students[App.currentStudentId];
-    const canvas = $("#week-canvas");
+  function drawWeekChart(canvas, st) {
     if (!canvas || !st) return;
 
     const ctx = canvas.getContext("2d");
@@ -1175,7 +1309,6 @@
     qaAdd("user", q);
 
     setTimeout(() => {
-      // 简单模拟：分数除法
       if (q.includes("÷") || q.includes("除法") || q.includes("3/4") || q.includes("20")) {
         qaAdd(
           "ai",
@@ -1190,7 +1323,6 @@
         return;
       }
 
-      // 作文评改模拟
       if (q.includes("作文") || q.includes("通顺") || q.includes("修改")) {
         qaAdd(
           "ai",
@@ -1216,20 +1348,81 @@
   }
 
   /** --------------------------
-   *  Teacher -> Student Profile Jump
+   *  Teacher -> Student Profile Drill
    *  -------------------------- */
   function openStudentProfile(studentId) {
-    if (studentId && Students[studentId]) {
-      App.currentStudentId = studentId;
+    // 教师侧：弹窗内钻取学生档案，不跳学生端
+    if (App.role === "teacher") {
+      const st = Students[studentId] || Students["S-01"];
+      setText("#modal-title", `学生档案 · ${st.name}`);
+      const body = $("#modal-body");
+      if (body) {
+        body.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:1000;background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+                ${st.name.slice(0,1)}
+              </div>
+              <div>
+                <div style="font-weight:1000;">${st.name}</div>
+                <div style="color:#64748b;font-weight:800;font-size:12px;margin-top:2px;">${st.grade} · 打卡 ${st.streak} 天</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" onclick="showToast('已模拟下发：补救任务（演示）')">下发补救任务</button>
+              <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟家校提醒（演示）')">家校提醒</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns: 1fr 1fr; gap:12px;">
+            <div style="border:1px solid rgba(226,232,240,0.9);border-radius:16px;padding:12px;background:#fff;">
+              <div style="font-weight:1000;margin-bottom:8px;">能力雷达（示例）</div>
+              <canvas id="modal-radar" width="320" height="230"></canvas>
+              <div style="margin-top:8px;color:#64748b;font-weight:800;font-size:12px;">
+                说明：蓝色=当前，灰色=目标
+              </div>
+            </div>
+
+            <div style="border:1px solid rgba(226,232,240,0.9);border-radius:16px;padding:12px;background:#fff;">
+              <div style="font-weight:1000;margin-bottom:8px;">周度掌握度趋势</div>
+              <canvas id="modal-week" width="320" height="230"></canvas>
+              <div style="margin-top:8px;color:#64748b;font-weight:800;font-size:12px;">
+                建议：优先补齐“计算/建模”，再做迁移变式
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;padding:12px;border-radius:16px;background:#f8fafc;border:1px dashed rgba(79,70,229,0.18);">
+            <div style="font-weight:1000;margin-bottom:8px;">差距提示（通俗版）</div>
+            <ul style="margin:0;padding-left:18px;color:#334155;font-weight:800;font-size:13px;line-height:1.5;">
+              ${st.gaps.map(g => `<li>${g}</li>`).join("")}
+            </ul>
+          </div>
+        `;
+      }
+
+      openModal();
+
+      // modal 内绘图
+      setTimeout(() => {
+        drawRadarChart($("#modal-radar"), st);
+        drawWeekChart($("#modal-week"), st);
+      }, 40);
+
+      showToast("已在教师侧弹窗打开学生档案");
+      return;
     }
+
+    // 学生侧：允许进入学生端
+    if (studentId && Students[studentId]) App.currentStudentId = studentId;
     switchView("student", document.querySelector('[data-view="student"]'));
     setStudentTab("growth");
     ensureStudentMounted();
-    showToast("已从异常钻取跳转到学生成长档案");
+    showToast("已打开成长档案");
   }
 
   /** --------------------------
-   *  Gov
+   *  Gov (demo 不开放)
    *  -------------------------- */
   function initMap() {
     const grid = $("#map-grid");
@@ -1282,6 +1475,8 @@
   /** --------------------------
    *  Expose to window (for inline onclick)
    *  -------------------------- */
+  window.setRole = setRole;
+
   window.switchView = switchView;
   window.setTeacherMode = setTeacherMode;
   window.startScenario = startScenario;
@@ -1315,9 +1510,12 @@
     const ver = $("#app-version");
     if (ver) ver.textContent = App.version;
 
-    // default render for trend & student charts if they exist
-    if ($("#trend-canvas")) renderTeacherLinkedArea();
-    if ($("#radar-canvas")) ensureStudentMounted();
+    // 先初始化 role
+    ensureRoleReady();
+
+    // 如果当前页有趋势图，补一次渲染
+    if ($("#trend-canvas") && App.role === "teacher") renderTeacherLinkedArea();
+    if ($("#radar-canvas") && App.role === "student") ensureStudentMounted();
   }
 
   boot();
