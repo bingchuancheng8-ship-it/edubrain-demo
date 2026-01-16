@@ -1,753 +1,346 @@
-/**
- * AI EduBrain Demo
- * - Product-like structure: assets split, version, SPA friendly
- * - Features added: Trend chart + Class segmentation + Anomaly drilldown (drawer)
- * - Keeps original flows: Home / Teacher / Student / Gov, Teacher Prep/Mark, OCR scan
- */
+/* ======================================================
+   AI EduBrain Demo - app.js (Global Click Fix Version)
+   目标：所有 onclick 都能正常触发（挂载到 window）
+====================================================== */
 
-const APP = {
-  name: "AI EduBrain",
-  version: "0.9.0-demo",
-  build: "2026.01.16",
-};
+(() => {
+  "use strict";
 
-const state = {
-  view: "home",
-  teacherMode: "prep", // prep | mark | analytics
-  scanning: false,
-  feedTimer: null,
-  govInited: false,
-};
+  const APP_VERSION = "v0.9.0-demo";
 
-const mock = {
-  studentTrend: [62, 64, 61, 66, 69, 70, 72],
-  archiveTrend: [58, 61, 63, 62, 66, 69, 72],
-  govTrendA: [86, 87, 88, 89, 90, 91, 92],
-  govTrendB: [8, 10, 9, 11, 13, 12, 14],
+  // ---------- Utils ----------
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  classSegments: [
-    { name: "A 组 · 领先", desc: "综合掌握高，可提升拔高题", count: 9, pct: 30 },
-    { name: "B 组 · 稳定", desc: "基础扎实，补齐推理链路", count: 14, pct: 47 },
-    { name: "C 组 · 预警", desc: "计算/概念薄弱，需要补救练习", count: 7, pct: 23 },
-  ],
-
-  anomalies: [
-    {
-      id: "an-001",
-      title: "作业量预警：初二(3) 班本周作业耗时异常偏高",
-      sub: "较区域均值 +38%，疑似题目难度偏高或讲解未覆盖",
-      meta: { school: "实验中学", class: "初二(3)班", metric: "作业耗时", impact: "31人" },
-      insights: [
-        "题目梯度偏陡：中档题占比过高，导致后段学生卡住",
-        "错误集中在「分数乘除法 · 单位“1”识别」",
-        "讲评环节缺少“错因拆解”，学生反复试错"
-      ],
-      recommended: [
-        "将作业拆为 A/B 两层：基础 8 题 + 提升 4 题",
-        "为 C 组推送 3 组“单位 1”专项练习（每组 5 题）",
-        "下一课加入 6 分钟错因讲解：画线段图定位单位 1"
-      ],
-      drill: {
-        topMistakes: [
-          { k: "单位“1”识别错误", v: "45%" },
-          { k: "负号处理错误", v: "21%" },
-          { k: "约分步骤遗漏", v: "16%" },
-        ],
-        students: [
-          { name: "张同学", risk: "高", note: "概念理解弱，需先补基础" },
-          { name: "王同学", risk: "中", note: "计算粗心，建议限时训练" },
-          { name: "李同学", risk: "中", note: "步骤跳跃，需规范书写" },
-        ],
-      },
-    },
-    {
-      id: "an-002",
-      title: "共性错误突增：分数应用题第 2 题错误率升高",
-      sub: "错题集中于“20 ÷ 3/4”的逆运算理解偏差",
-      meta: { school: "第一中学", class: "初二(1)班", metric: "错误率", impact: "28人" },
-      insights: [
-        "学生易把“除以分数”当成“乘以分数”",
-        "缺少“为什么要乘倒数”的直观解释",
-        "线段图/单位 1 视角训练不足"
-      ],
-      recommended: [
-        "课堂加 2 题对比：20×3/4 与 20÷3/4 的含义差异",
-        "让学生用“份数法”复述题意：3/4 对应 20，求 1",
-        "批改后自动推送同类巩固练习 6 题"
-      ],
-      drill: {
-        topMistakes: [
-          { k: "倒数转换遗漏", v: "39%" },
-          { k: "题意理解偏差", v: "31%" },
-          { k: "步骤书写不规范", v: "18%" },
-        ],
-        students: [
-          { name: "陈同学", risk: "高", note: "概念混淆明显" },
-          { name: "赵同学", risk: "中", note: "能做但不稳定" },
-          { name: "吴同学", risk: "中", note: "过程跳步" },
-        ],
-      },
-    },
-  ],
-};
-
-// ---------- helpers ----------
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-
-function setVersionBadge() {
-  const el = $("#app-version");
-  if (el) el.textContent = `v${APP.version}`;
-}
-
-function setActiveView(id) {
-  state.view = id;
-
-  $$(".nav-item").forEach((n) => n.classList.remove("active"));
-  const nav = $(`.nav-item[data-view="${id}"]`);
-  if (nav) nav.classList.add("active");
-
-  $$(".view-container").forEach((v) => v.classList.remove("active"));
-  const view = $(`#view-${id}`);
-  if (view) view.classList.add("active");
-
-  const titles = { home: "首页", teacher: "教师工作台", student: "学生伴侣", gov: "治理驾驶舱" };
-  $("#page-title").textContent = titles[id] || "工作区";
-
-  // header toggle
-  if (id === "gov") {
-    $("#top-header").style.display = "none";
-    initGov();
-  } else {
-    $("#top-header").style.display = "flex";
-    teardownGov();
+  function safeText(el, text) {
+    if (!el) return;
+    el.innerText = text;
   }
 
-  if (id === "student") {
-    renderStudentCharts();
-    seedStudentFeed();
-  }
-}
+  // ---------- View Switch ----------
+  function switchView(id, navEl) {
+    // 1) nav active
+    $$(".nav-item").forEach((el) => el.classList.remove("active"));
+    if (navEl) navEl.classList.add("active");
 
-function svgTrend(values, opts = {}) {
-  const w = 520, h = 120;
-  const pad = 10;
-  const max = Math.max(...values) + 3;
-  const min = Math.min(...values) - 3;
+    // 2) view active
+    $$(".view-container").forEach((el) => el.classList.remove("active"));
+    const current = $("#view-" + id);
+    if (current) current.classList.add("active");
 
-  const xStep = (w - pad * 2) / (values.length - 1);
-  const scaleY = (val) => {
-    const t = (val - min) / (max - min);
-    return h - pad - t * (h - pad * 2);
-  };
+    // 3) header / title
+    const topHeader = $("#top-header");
+    const pageTitle = $("#page-title");
 
-  const points = values.map((v, i) => `${pad + i * xStep},${scaleY(v).toFixed(2)}`).join(" ");
+    const titles = {
+      home: "首页入口",
+      teacher: "教师工作台",
+      student: "学习伴侣",
+      gov: "治理驾驶舱",
+    };
+    safeText(pageTitle, titles[id] || id);
 
-  const last = values[values.length - 1];
-  const label = opts.label || "趋势";
-  const suffix = opts.suffix || "%";
-
-  return `
-  <svg viewBox="0 0 ${w} ${h}" aria-label="${label}">
-    <defs>
-      <linearGradient id="gl" x1="0" x2="1" y1="0" y2="0">
-        <stop offset="0" stop-color="#4f46e5" stop-opacity="0.25"></stop>
-        <stop offset="1" stop-color="#8b5cf6" stop-opacity="0.10"></stop>
-      </linearGradient>
-    </defs>
-
-    <path d="M ${pad},${h-pad} L ${points.replaceAll(" ", " L ")} L ${w-pad},${h-pad} Z"
-      fill="url(#gl)" opacity="1"></path>
-
-    <polyline points="${points}" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-
-    ${values.map((v, i) => `
-      <circle cx="${pad + i * xStep}" cy="${scaleY(v)}" r="4" fill="#4f46e5" opacity="${i === values.length - 1 ? 1 : 0.35}"></circle>
-    `).join("")}
-
-    <text x="${w - 12}" y="18" text-anchor="end" font-size="12" fill="#64748b">最新</text>
-    <text x="${w - 12}" y="40" text-anchor="end" font-size="20" font-weight="900" fill="#0f172a">${last}${suffix}</text>
-  </svg>`;
-}
-
-function addMsg(role, text) {
-  const box = $("#chat-box");
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  div.innerHTML = `<div class="msg-bubble">${text}</div>`;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
-
-// ---------- Home ----------
-function bindHomeActions() {
-  // cards
-  $$(".feature-card").forEach((c) => {
-    c.addEventListener("click", () => {
-      const act = c.getAttribute("data-action");
-      if (act === "prep") {
-        setActiveView("teacher");
-        setTeacherMode("prep");
-        $("#teacher-input").value = "生成《分数应用题》教学设计";
-        setTimeout(triggerTeacherMsg, 150);
-      } else if (act === "mark") {
-        setActiveView("teacher");
-        setTeacherMode("mark");
-      } else if (act === "student") {
-        setActiveView("student");
-      }
-    });
-  });
-
-  // magic go
-  $("#magic-go").addEventListener("click", () => {
-    const v = ($("#magic-input").value || "").trim();
-    if (!v) return;
-
-    if (v.includes("备课")) {
-      setActiveView("teacher");
-      setTeacherMode("prep");
-      $("#teacher-input").value = v;
-      triggerTeacherMsg();
-    } else if (v.includes("批改") || v.includes("作业")) {
-      setActiveView("teacher");
-      setTeacherMode("mark");
-    } else if (v.includes("成长") || v.includes("档案")) {
-      setActiveView("student");
-      openGrowthModal();
+    // 4) gov mode (hide header)
+    if (id === "gov") {
+      if (topHeader) topHeader.style.display = "none";
+      requestAnimationFrame(initMap);
     } else {
-      addMsg("ai", `我理解为：${v}。你可以进入教师端或学生端继续操作。`);
+      if (topHeader) topHeader.style.display = "flex";
+      // 清空地图，节省资源
+      const grid = $("#map-grid");
+      if (grid) grid.innerHTML = "";
+      stopFeed();
     }
-  });
-
-  $("#magic-input").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") $("#magic-go").click();
-  });
-}
-
-// ---------- Teacher ----------
-function setTeacherMode(mode) {
-  state.teacherMode = mode;
-
-  // button states
-  const btnPrep = $("#btn-prep");
-  const btnMark = $("#btn-mark");
-  const btnAnalytics = $("#btn-analytics");
-
-  btnPrep.className = "btn " + (mode === "prep" ? "btn-primary" : "btn-ghost");
-  btnMark.className = "btn " + (mode === "mark" ? "btn-primary" : "btn-ghost");
-  btnAnalytics.className = "btn " + (mode === "analytics" ? "btn-primary" : "btn-ghost");
-
-  // workspace visibility
-  $("#prep-placeholder").style.display = mode === "prep" ? "block" : "none";
-  $("#lesson-result").style.display = "none";
-  $("#ocr-interface").style.display = mode === "mark" ? "block" : "none";
-  $("#analytics-root").style.display = mode === "analytics" ? "block" : "none";
-
-  // reset OCR
-  if (mode === "mark") {
-    state.scanning = false;
-    $("#ocr-tip").style.display = "block";
-    const laser = $("#ocr-interface .scan-laser");
-    const spot = $("#ocr-interface .error-spot");
-    laser.style.display = "none";
-    spot.style.display = "none";
   }
 
-  if (mode === "analytics") {
-    renderTeacherAnalytics();
+  // ---------- Home shortcuts ----------
+  function startScenario(type) {
+    // 跳转到教师工作台
+    const navTeacher = $$(".nav-item")[1];
+    switchView("teacher", navTeacher);
+
+    if (type === "prep") {
+      setTeacherMode("prep");
+      // 自动输入一句示例
+      setTimeout(() => {
+        const input = $("#teacher-input");
+        if (input) {
+          input.value = "帮我生成一节《分数应用题》的教学设计";
+          triggerMsg();
+        }
+      }, 380);
+    }
+
+    if (type === "mark") {
+      setTeacherMode("mark");
+    }
   }
-}
 
-function renderLessonCard() {
-  $("#lesson-result").innerHTML = `
-    <div class="lesson-card">
-      <h2 style="font-size:20px;margin:0 0 14px 0;background:var(--primary-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:950">
-        📘 教学设计：分数应用题（学情联动版）
-      </h2>
+  // ---------- Teacher mode ----------
+  function setTeacherMode(mode) {
+    const btnPrep = $("#btn-prep");
+    const btnMark = $("#btn-mark");
 
-      <div style="position:relative; padding-left:18px">
-        <div class="timeline-line"></div>
+    const prepPlaceholder = $("#prep-placeholder");
+    const lessonResult = $("#lesson-result");
+    const ocr = $("#ocr-interface");
 
-        <div class="timeline-item">
-          <div style="font-weight:950;color:#0f172a">00:00 课堂导入</div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px">用“切蛋糕”引入单位“1”的含义</div>
-        </div>
+    // 切按钮样式
+    if (mode === "prep") {
+      if (btnPrep) btnPrep.className = "btn btn-primary";
+      if (btnMark) btnMark.className = "btn btn-ghost";
 
-        <div class="timeline-item">
-          <div style="font-weight:950;color:#0f172a">05:00 核心探究</div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px">画线段图理解数量关系（重点补齐：单位“1”定位）</div>
-        </div>
+      if (prepPlaceholder) prepPlaceholder.style.display = "flex";
+      if (lessonResult) lessonResult.style.display = "none";
+      if (ocr) ocr.style.display = "none";
+    } else {
+      if (btnPrep) btnPrep.className = "btn btn-ghost";
+      if (btnMark) btnMark.className = "btn btn-primary";
 
-        <div class="timeline-item">
-          <div style="font-weight:950;color:#0f172a">15:00 分层训练</div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px">A/B/C 分层练习：基础 8 + 提升 4（自动推荐）</div>
-        </div>
+      if (prepPlaceholder) prepPlaceholder.style.display = "none";
+      if (lessonResult) lessonResult.style.display = "none";
+      if (ocr) ocr.style.display = "block";
 
-        <div class="timeline-item">
-          <div style="font-weight:950;color:#0f172a">28:00 课堂小测</div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px">实时收集反馈，生成薄弱点雷达</div>
-        </div>
-      </div>
+      // 重置 OCR 状态
+      if (ocr) {
+        const tip = $("#ocr-tip", ocr);
+        const laser = $(".scan-laser", ocr);
+        const spot = $(".error-spot", ocr);
+        if (tip) tip.style.display = "block";
+        if (laser) laser.style.display = "none";
+        if (spot) spot.style.display = "none";
+      }
+    }
+  }
 
-      <button class="btn btn-primary" style="width:100%;margin-top:14px;justify-content:center">✨ 导出 PPT（Mock）</button>
-    </div>
-  `;
-}
+  function addMsg(role, text) {
+    const box = $("#chat-box");
+    if (!box) return;
 
-function triggerTeacherMsg() {
-  const input = $("#teacher-input");
-  const text = (input.value || "").trim();
-  if (!text) return;
+    const div = document.createElement("div");
+    div.className = `msg ${role}`;
+    div.innerHTML = `<div class="msg-bubble">${text}</div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
 
-  addMsg("user", text);
-  input.value = "";
+  function triggerMsg() {
+    const input = $("#teacher-input");
+    if (!input || !input.value.trim()) return;
 
-  // simple routing
-  if (text.includes("异常") || text.includes("分析")) {
-    addMsg("ai", "已切换到「教学分析」，正在汇总：趋势 + 分层 + 异常钻取…");
+    const text = input.value.trim();
+    addMsg("user", text);
+    input.value = "";
+
+    // AI 回复（模拟）
     setTimeout(() => {
-      setTeacherMode("analytics");
-      addMsg("ai", "已生成分析看板：你可以点击异常卡片进入钻取详情。");
-    }, 600);
-    return;
+      addMsg("ai", "收到，我正在生成教学设计与课堂环节建议…");
+
+      setTimeout(() => {
+        const prepPlaceholder = $("#prep-placeholder");
+        const lessonResult = $("#lesson-result");
+
+        if (prepPlaceholder) prepPlaceholder.style.display = "none";
+        if (lessonResult) {
+          lessonResult.style.display = "block";
+          renderLessonCard();
+        }
+
+        addMsg("ai", "已生成：含导入、探究、练习分层与课后作业建议。");
+      }, 800);
+    }, 450);
   }
 
-  if (state.teacherMode !== "prep") {
-    addMsg("ai", "我已记录指令。建议切换到「备课模式」执行教案生成。");
-    return;
+  function renderLessonCard() {
+    const target = $("#lesson-result");
+    if (!target) return;
+
+    target.innerHTML = `
+      <div style="
+        background: rgba(255,255,255,0.92);
+        border:1px solid #eef2ff;
+        border-radius:22px;
+        padding:22px;
+        box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+      ">
+        <h2 style="
+          margin:0 0 14px 0;
+          font-size:20px;
+          font-weight:900;
+          background: linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);
+          -webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;
+        ">📘 教学设计：分数应用题</h2>
+
+        <div style="color:#64748b; font-size:13px; margin-bottom:14px;">
+          教学目标：理解数量关系、建立线段图模型、掌握“单位 1”的迁移推理
+        </div>
+
+        <div style="position:relative; padding-left:18px;">
+          <div style="
+            position:absolute; left:6px; top:6px; bottom:-6px;
+            width:2px; background:#e2e8f0;
+          "></div>
+
+          ${timelineItem("00:00 课堂导入", "生活中的“切蛋糕/折扣”问题引入")}
+          ${timelineItem("05:00 核心探究", "画线段图 → 明确单位1 → 列式求解")}
+          ${timelineItem("18:00 分层练习", "A 基础巩固 / B 变式迁移 / C 综合挑战")}
+          ${timelineItem("35:00 课堂小测", "2 题诊断：单位1识别 + 逆向推理")}
+          ${timelineItem("42:00 总结作业", "错因归纳 + 3 题巩固 + 1 题拓展")}
+        </div>
+
+        <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:16px;"
+          onclick="alert('Demo：导出功能可接入 PPT/Word 生成服务')">
+          ✨ 导出 PPT
+        </button>
+      </div>
+    `;
   }
 
-  setTimeout(() => {
-    addMsg("ai", "正在生成《分数应用题》教学设计（已联动班级薄弱点：单位“1”识别）…");
-    setTimeout(() => {
-      $("#prep-placeholder").style.display = "none";
-      $("#lesson-result").style.display = "block";
-      renderLessonCard();
-    }, 700);
-  }, 350);
-}
-
-function renderTeacherAnalytics() {
-  const root = $("#analytics-root");
-
-  const kpis = [
-    { k: "本周作业完成率", v: "91%", s: "较上周 +2%" },
-    { k: "薄弱知识点数", v: "4", s: "单位“1”/负号/约分/推理链路" },
-    { k: "异常预警", v: "2", s: "可点击钻取详情" },
-  ];
-
-  const segHtml = mock.classSegments.map((s) => `
-    <div class="seg-item">
-      <div class="seg-left">
-        <div class="seg-name">${s.name}</div>
-        <div class="seg-desc">${s.desc}</div>
+  function timelineItem(title, sub) {
+    return `
+      <div style="position:relative; padding-left:22px; margin-bottom:14px;">
+        <div style="
+          position:absolute; left:0; top:3px;
+          width:12px; height:12px; border-radius:50%;
+          background:#fff; border:3px solid #4f46e5;
+        "></div>
+        <div style="font-weight:900; color:#111827; font-size:13px;">${title}</div>
+        <div style="font-size:12px; color:#64748b; margin-top:4px;">${sub}</div>
       </div>
-      <div class="seg-right">
-        <div class="seg-num">${s.count}人</div>
-        <div class="seg-bar"><i style="width:${Math.min(100, s.pct)}%"></i></div>
-      </div>
-    </div>
-  `).join("");
+    `;
+  }
 
-  const anomalyHtml = mock.anomalies.map((a) => `
-    <div class="anomaly" data-anomaly="${a.id}">
-      <div class="an-title">${a.title}</div>
-      <div class="an-sub">${a.sub}</div>
-      <div class="an-meta">
-        <span>${a.meta.school} · ${a.meta.class}</span>
-        <span>影响：${a.meta.impact}</span>
-      </div>
-    </div>
-  `).join("");
+  // ---------- OCR ----------
+  let isScanning = false;
+  function runOCR(el) {
+    if (isScanning) return;
+    isScanning = true;
 
-  root.innerHTML = `
-    <div class="analytics">
-      <div class="analytics-head">
-        <div>
-          <div class="ah-title">📊 教学分析看板（趋势 · 分层 · 异常）</div>
-          <div class="ah-sub">数据源：作业/练习/课堂反馈（Mock） · 支撑：学段能力标准库</div>
-        </div>
-        <div style="display:flex; gap:10px">
-          <button class="btn btn-ghost btn-sm" id="btn-refresh-analytics">刷新</button>
-          <button class="btn btn-primary btn-sm" id="btn-action-plan">生成教学调整建议</button>
-        </div>
-      </div>
+    const tip = $("#ocr-tip", el);
+    const laser = $(".scan-laser", el);
+    const spot = $(".error-spot", el);
 
-      <div class="kpi-row">
-        ${kpis.map(k => `
-          <div class="kpi">
-            <div class="k">${k.k}</div>
-            <div class="v">${k.v}</div>
-            <div class="s">${k.s}</div>
-          </div>
-        `).join("")}
-      </div>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title">📈 班级趋势（近 7 天掌握度）</div>
-          <div class="card-sub">综合掌握度 · 正确率 · 稳定性</div>
-          <div class="chart-wrap" id="teacher-trend"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">👥 班级分层（A/B/C）</div>
-          <div class="card-sub">用于作业分层、精准补救、拔高提升</div>
-          <div class="segment-list">
-            ${segHtml}
-          </div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:12px">
-        <div class="card-title">🚨 异常预警（可钻取）</div>
-        <div class="card-sub">点击进入：错因分布 · 影响学生 · 建议动作</div>
-        <div class="anomaly-list">
-          ${anomalyHtml}
-        </div>
-      </div>
-    </div>
-  `;
-
-  $("#teacher-trend").innerHTML = svgTrend([68, 69, 67, 70, 71, 72, 73], { label: "班级趋势" });
-
-  $("#btn-refresh-analytics").addEventListener("click", () => {
-    addMsg("ai", "已刷新教学分析看板（Mock）。");
-    renderTeacherAnalytics();
-  });
-
-  $("#btn-action-plan").addEventListener("click", () => {
-    addMsg("ai", "教学调整建议：建议对 C 组进行“单位1识别”专项补救；对 B 组加推理链路训练；A 组加入 2 道拔高题。");
-  });
-
-  // bind anomaly click
-  root.querySelectorAll("[data-anomaly]").forEach((el) => {
-    el.addEventListener("click", () => {
-      const id = el.getAttribute("data-anomaly");
-      openAnomalyDrawer(id);
-    });
-  });
-}
-
-// OCR scan
-function runOCR() {
-  if (state.scanning) return;
-  state.scanning = true;
-
-  $("#ocr-tip").style.display = "none";
-  const laser = $("#ocr-interface .scan-laser");
-  const spot = $("#ocr-interface .error-spot");
-  laser.style.display = "block";
-  laser.querySelector?.("::before");
-
-  // make laser visible via pseudo: show wrapper
-  laser.style.setProperty("opacity", "1");
-  laser.style.pointerEvents = "none";
-  laser.style.position = "absolute";
-  laser.style.inset = "0";
-  laser.style.display = "block";
-  laser.style.background = "transparent";
-  laser.style.zIndex = "6";
-
-  // show animation
-  laser.style.display = "block";
-  laser.style.setProperty("display", "block");
-  // use pseudo animation by enabling opacity on ::before
-  laser.style.setProperty("--x", "1");
-
-  // hack: toggle class by inserting style attribute for before
-  laser.style.setProperty("filter", "none");
-  laser.style.setProperty("mix-blend-mode", "screen");
-  laser.style.setProperty("opacity", "1");
-  laser.style.setProperty("pointer-events", "none");
-  laser.style.setProperty("display", "block");
-  laser.style.setProperty("visibility", "visible");
-
-  // the real animation is in CSS on ::before; we just need it visible:
-  laser.style.setProperty("contain", "paint");
-
-  // also toggle pseudo by adding attribute (CSS already runs, but opacity 0->1 inside)
-  laser.style.setProperty("display", "block");
-  laser.style.setProperty("opacity", "1");
-  laser.style.setProperty("will-change", "transform");
-
-  setTimeout(() => {
-    laser.style.display = "none";
-    spot.style.display = "block";
-    addMsg("ai", "OCR 诊断完成：共性错误集中在「单位“1”识别」与「除以分数=乘倒数」。建议对 C 组推送专项补救练习。");
-    state.scanning = false;
-  }, 1700);
-}
-
-// Drawer
-function openAnomalyDrawer(id) {
-  const item = mock.anomalies.find((x) => x.id === id);
-  if (!item) return;
-
-  $("#drawer-title").textContent = "异常钻取";
-  $("#drawer-sub").textContent = `${item.meta.school} · ${item.meta.class} · 指标：${item.meta.metric}`;
-
-  const chips = item.drill.topMistakes.map((m) => `<span class="chip">${m.k} · ${m.v}</span>`).join("");
-  const students = item.drill.students.map((s) => `
-    <div style="display:flex; justify-content:space-between; gap:12px; padding:10px; border:1px solid #e2e8f0; border-radius:14px; background:#f8fafc; margin-bottom:8px">
-      <div>
-        <div style="font-weight:950">${s.name} <span style="font-size:12px; color:#64748b; font-weight:900">风险：${s.risk}</span></div>
-        <div style="font-size:12px; color:#64748b; margin-top:4px">${s.note}</div>
-      </div>
-      <button class="btn btn-ghost btn-sm" data-action="push">推送练习</button>
-    </div>
-  `).join("");
-
-  $("#drawer-body").innerHTML = `
-    <div class="drawer-section">
-      <div class="ds-title">问题概览</div>
-      <div class="ds-text">${item.sub}</div>
-    </div>
-
-    <div class="drawer-section">
-      <div class="ds-title">洞察（为什么发生）</div>
-      <div class="ds-text">
-        <ol style="margin:8px 0 0 18px; padding:0; color:#334155; font-size:13px; line-height:1.7">
-          ${item.insights.map(i => `<li>${i}</li>`).join("")}
-        </ol>
-      </div>
-    </div>
-
-    <div class="drawer-section">
-      <div class="ds-title">错因分布</div>
-      <div class="ds-chip-row">${chips}</div>
-    </div>
-
-    <div class="drawer-section">
-      <div class="ds-title">建议动作（可执行）</div>
-      <div class="ds-text">
-        <ol style="margin:8px 0 0 18px; padding:0; color:#334155; font-size:13px; line-height:1.7">
-          ${item.recommended.map(r => `<li>${r}</li>`).join("")}
-        </ol>
-      </div>
-      <div style="display:flex; gap:10px; margin-top:12px">
-        <button class="btn btn-primary btn-sm" id="btn-gen-remedy">一键生成补救练习</button>
-        <button class="btn btn-ghost btn-sm" id="btn-write-plan">生成教研要点</button>
-      </div>
-    </div>
-
-    <div class="drawer-section">
-      <div class="ds-title">影响学生（可推送）</div>
-      ${students}
-    </div>
-  `;
-
-  $("#drawer-backdrop").style.display = "block";
-  $("#drawer").style.display = "flex";
-
-  $("#btn-gen-remedy").addEventListener("click", () => {
-    addMsg("ai", "已生成补救练习（Mock）：单位“1”识别专项 15 题（按 C 组推送）。");
-  });
-
-  $("#btn-write-plan").addEventListener("click", () => {
-    addMsg("ai", "教研要点建议：错因分类讲解 + 分层作业梯度优化 + 课堂 6 分钟“倒数直观解释”环节。");
-  });
-
-  // push buttons
-  $("#drawer-body").querySelectorAll('[data-action="push"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
-      addMsg("ai", "已向该学生推送同类巩固练习（Mock）。");
-    });
-  });
-}
-
-function closeDrawer() {
-  $("#drawer-backdrop").style.display = "none";
-  $("#drawer").style.display = "none";
-}
-
-// ---------- Student ----------
-function renderStudentCharts() {
-  $("#student-trend").innerHTML = svgTrend(mock.studentTrend, { label: "学生趋势", suffix: "%" });
-}
-
-function seedStudentFeed() {
-  const box = $("#student-feed");
-  if (!box || box.children.length) return;
-
-  const items = [
-    "我已识别你在「单位“1”」上容易混淆，建议先做 5 道基础题。",
-    "几何推理建议：先写条件→结论，再补充推理链路。",
-    "你的练习完成度不错，保持每天 15 分钟巩固即可。",
-  ];
-  items.forEach((t) => {
-    const d = document.createElement("div");
-    d.className = "feed-bubble";
-    d.textContent = t;
-    box.appendChild(d);
-  });
-}
-
-function openGrowthModal() {
-  $("#growth-backdrop").style.display = "block";
-  $("#growth-modal").style.display = "flex";
-  $("#archive-trend").innerHTML = svgTrend(mock.archiveTrend, { label: "成长档案趋势", suffix: "%" });
-}
-function closeGrowthModal() {
-  $("#growth-backdrop").style.display = "none";
-  $("#growth-modal").style.display = "none";
-}
-
-// student QA
-function studentAsk() {
-  const ip = $("#student-qa");
-  const text = (ip.value || "").trim();
-  if (!text) return;
-  ip.value = "";
-
-  const feed = $("#student-feed");
-  const q = document.createElement("div");
-  q.className = "feed-bubble";
-  q.textContent = `你：${text}`;
-  feed.prepend(q);
-
-  const a = document.createElement("div");
-  a.className = "feed-bubble";
-  a.textContent = `学伴：我会先给分步思路，再补充相关知识点，并将错题归档（Mock）。`;
-  feed.prepend(a);
-}
-
-// ---------- Gov ----------
-function initGov() {
-  // trend chart
-  const govTrend = $("#gov-trend");
-  if (govTrend) govTrend.innerHTML = svgTrend(mock.govTrendA, { label: "区域备课覆盖率", suffix: "%" });
-
-  // init map once per enter
-  const grid = $("#map-grid");
-  grid.innerHTML = "";
-
-  for (let i = 0; i < 60; i++) {
-    const bar = document.createElement("div");
-    const isWarn = Math.random() > 0.85;
-    const h = Math.random() * 250 + 50;
-
-    bar.className = "data-bar " + (isWarn ? "warning" : "");
-    bar.style.left = Math.random() * 1100 + 50 + "px";
-    bar.style.top = Math.random() * 1100 + 50 + "px";
-    bar.style.transform = "translateZ(0px)";
-    bar.style.height = "6px";
-
-    grid.appendChild(bar);
+    if (tip) tip.style.display = "none";
+    if (laser) laser.style.display = "block";
 
     setTimeout(() => {
-      bar.style.height = h + "px";
-      bar.style.transform = `translateZ(${h}px)`;
-    }, 100 + Math.random() * 800);
+      if (laser) laser.style.display = "none";
+      if (spot) spot.style.display = "block";
+
+      addMsg("ai", "检测到共性错误：38% 学生在第 2 题（单位 1 识别）出错。");
+      addMsg("ai", "建议：下节课用 3 分钟做“单位 1 快速判断”微训练。");
+      isScanning = false;
+    }, 1900);
   }
 
-  startGovFeed();
-}
-
-function teardownGov() {
-  // stop feed
-  if (state.feedTimer) {
-    clearInterval(state.feedTimer);
-    state.feedTimer = null;
+  // ---------- Student modal ----------
+  function openVoiceModal() {
+    const modal = $("#voice-modal");
+    if (modal) modal.style.display = "flex";
   }
-  // clear map to save perf
-  const grid = $("#map-grid");
-  if (grid) grid.innerHTML = "";
-}
 
-function startGovFeed() {
-  const list = $("#feed-list");
-  const schools = ["第一中学", "实验小学", "育才学校", "高新一小"];
-  const acts = ["生成了数学教案", "发布了分层作业", "触发了作业量预警", "查看了学生档案"];
+  function closeVoiceModal() {
+    const modal = $("#voice-modal");
+    if (modal) modal.style.display = "none";
+    alert("🎉 评分：98分！（Demo）");
+  }
 
-  if (state.feedTimer) clearInterval(state.feedTimer);
-  state.feedTimer = setInterval(() => {
-    const d = document.createElement("div");
-    d.className = "feed-item";
-    const s = schools[Math.floor(Math.random() * schools.length)];
-    const a = acts[Math.floor(Math.random() * acts.length)];
-    d.innerHTML = `<span style="color:#38bdf8">[${s}]</span> 李老师 ${a}`;
-    list.prepend(d);
-    if (list.children.length > 6) list.removeChild(list.lastChild);
-  }, 1600);
-}
+  // ---------- Gov Map ----------
+  let feedTimer = null;
 
-// ---------- SPA wiring ----------
-function bindNav() {
-  $("#nav-menu").addEventListener("click", (e) => {
-    const item = e.target.closest(".nav-item");
-    if (!item) return;
-    const view = item.getAttribute("data-view");
-    if (!view) return;
-    setActiveView(view);
-  });
-}
+  function initMap() {
+    const grid = $("#map-grid");
+    if (!grid) return;
 
-function bindTeacher() {
-  $("#teacher-modes").addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-mode]");
-    if (!btn) return;
-    setTeacherMode(btn.getAttribute("data-mode"));
-  });
+    grid.innerHTML = "";
 
-  $("#teacher-send").addEventListener("click", triggerTeacherMsg);
-  $("#teacher-input").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") triggerTeacherMsg();
-  });
+    // 生成柱状数据
+    for (let i = 0; i < 60; i++) {
+      const bar = document.createElement("div");
+      const isWarn = Math.random() > 0.86;
+      const h = Math.floor(Math.random() * 260 + 40);
 
-  $("#ocr-click-area").addEventListener("click", () => {
-    if (state.teacherMode !== "mark") return;
-    runOCR();
-  });
+      bar.className = "data-bar" + (isWarn ? " warning" : "");
+      bar.style.left = Math.floor(Math.random() * 1080 + 50) + "px";
+      bar.style.top = Math.floor(Math.random() * 1080 + 50) + "px";
+      bar.style.transform = "translateZ(0px)";
+      bar.title = isWarn ? "预警：作业量偏高" : "正常";
 
-  $("#drawer-close").addEventListener("click", closeDrawer);
-  $("#drawer-backdrop").addEventListener("click", closeDrawer);
+      // 点击钻取（Demo）
+      bar.onclick = () => {
+        alert(isWarn ? "钻取：该校作业量预警（Demo）" : "钻取：该校掌握度趋势（Demo）");
+      };
 
-  $("#btn-export").addEventListener("click", () => {
-    addMsg("ai", "导出（Mock）：已生成《本周教学分析报告》PDF。");
-  });
-}
+      grid.appendChild(bar);
 
-function bindStudent() {
-  $("#btn-growth").addEventListener("click", openGrowthModal);
-  $("#growth-close").addEventListener("click", closeGrowthModal);
-  $("#growth-backdrop").addEventListener("click", closeGrowthModal);
+      setTimeout(() => {
+        bar.style.height = h + "px";
+        bar.style.transform = `translateZ(${h}px)`;
+      }, 80 + Math.random() * 700);
+    }
 
-  $("#qa-go").addEventListener("click", studentAsk);
-  $("#student-qa").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") studentAsk();
-  });
+    startFeed();
+  }
 
-  $("#btn-review").addEventListener("click", () => {
-    const feed = $("#student-feed");
-    const d = document.createElement("div");
-    d.className = "feed-bubble";
-    d.textContent = "周度复盘：代数计算错题较多，建议先基础→再综合；我已为你排好 3 组练习（Mock）。";
-    feed.prepend(d);
-  });
+  function startFeed() {
+    const list = $("#feed-list");
+    if (!list) return;
 
-  $("#btn-practice").addEventListener("click", () => {
-    const feed = $("#student-feed");
-    const d = document.createElement("div");
-    d.className = "feed-bubble";
-    d.textContent = "已生成专项练习：单位“1”识别 10 题（Mock），完成后自动记录进成长档案。";
-    feed.prepend(d);
-  });
-}
+    const schools = ["第一中学", "实验小学", "育才学校", "高新一小"];
+    const acts = ["生成了数学教案", "发布了分层作业", "触发了作业量预警", "查看了学生档案"];
 
-function boot() {
-  setVersionBadge();
-  bindNav();
-  bindHomeActions();
-  bindTeacher();
-  bindStudent();
+    stopFeed();
+    feedTimer = setInterval(() => {
+      const d = document.createElement("div");
+      d.className = "feed-item";
 
-  // initial charts
-  renderStudentCharts();
+      const s = schools[Math.floor(Math.random() * schools.length)];
+      const a = acts[Math.floor(Math.random() * acts.length)];
 
-  // default view
-  setActiveView("home");
-}
+      d.innerHTML = `<span style="color:#38bdf8">[${s}]</span> 李老师 ${a}`;
+      list.prepend(d);
 
-document.addEventListener("DOMContentLoaded", boot);
+      // 最多保留 5 条
+      if (list.children.length > 5) {
+        list.removeChild(list.lastChild);
+      }
+    }, 1600);
+  }
+
+  function stopFeed() {
+    if (feedTimer) clearInterval(feedTimer);
+    feedTimer = null;
+  }
+
+  // ---------- Boot ----------
+  function boot() {
+    // set version badge if empty
+    const v = $("#app-version");
+    if (v && (!v.innerText || !v.innerText.trim())) {
+      v.innerText = APP_VERSION;
+    }
+
+    // 默认模式：备课
+    setTeacherMode("prep");
+
+    // 防止首次加载没有 active 的情况
+    if (!$("#view-home")?.classList.contains("active")) {
+      const navHome = $$(".nav-item")[0];
+      switchView("home", navHome);
+    }
+  }
+
+  // ✅ 关键：挂载到 window（保证 inline onclick 可用）
+  window.switchView = switchView;
+  window.startScenario = startScenario;
+  window.setTeacherMode = setTeacherMode;
+  window.triggerMsg = triggerMsg;
+  window.runOCR = runOCR;
+  window.openVoiceModal = openVoiceModal;
+  window.closeVoiceModal = closeVoiceModal;
+  window.initMap = initMap;
+
+  // 等待 DOM
+  document.addEventListener("DOMContentLoaded", boot);
+})();
