@@ -5,248 +5,664 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI EduBrain | K12 教育智能体演示</title>
 
-    <!-- 关键：资源都在 assets 下 -->
+    <!-- 关键：静态资源全部在 /assets 下 -->
     <link rel="stylesheet" href="/assets/app.css" />
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   </head>
 
   <body>
-    <!-- 顶部栏 -->
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand__logo">
-          <img src="/assets/digital-human.svg" alt="AI EduBrain" />
-        </div>
-        <div class="brand__text">
-          <div class="brand__title">AI EduBrain</div>
-          <div class="brand__sub">K12 教育智能体演示</div>
-        </div>
-      </div>
+    <!-- Toast -->
+    <div id="toast" class="toast" style="display: none">提示</div>
 
-      <div class="topbar__actions">
-        <button class="btn btn--ghost" id="btnSwitchRole">切换身份</button>
-      </div>
-    </header>
-
-    <main class="layout">
-      <!-- 左侧导航 -->
-      <aside class="sidebar">
-        <div class="sidebar__meta">
-          <div class="meta__ver">v0.9.3</div>
-          <div class="meta__status" id="systemStatus">系统正常</div>
+    <!-- Role Gate -->
+    <div id="role-gate" class="role-gate" style="display: none">
+      <div class="role-card">
+        <div class="role-head">
+          <div class="role-title">选择身份进入演示系统</div>
+          <div class="role-sub">系统将按身份隔离，仅展示你所属角色的业务入口。</div>
         </div>
 
-        <nav class="nav">
-          <div class="nav__group">
-            <button class="nav__item active" data-view="home" id="navHome">
-              🏠 首页入口
-            </button>
+        <div class="role-grid">
+          <div class="role-item" onclick="setRole('teacher')">
+            <div class="role-tag">教师端</div>
+            <div class="role-icon">👩‍🏫</div>
+            <div class="role-name">老师</div>
+            <div class="role-desc">备课 / 批改 / 学情分析（趋势-分层-异常联动）</div>
           </div>
 
-          <div class="nav__group" id="navGroupRole">
-            <!-- 三角色入口：JS 会根据身份显示其一 -->
-            <button class="nav__item" data-view="teacher" id="navTeacher">
-              👩‍🏫 教师工作台
-            </button>
-            <button class="nav__item" data-view="student" id="navStudent">
-              🧑‍🎓 学习伴侣
-            </button>
-            <button class="nav__item" data-view="gov" id="navGov">
-              🏛️ 治理驾驶舱
-            </button>
+          <div class="role-item" onclick="setRole('student')">
+            <div class="role-tag">学生端</div>
+            <div class="role-icon">🧑‍🎓</div>
+            <div class="role-name">学生</div>
+            <div class="role-desc">成长档案 / 学习计划 / 即时答疑</div>
           </div>
-        </nav>
 
-        <div class="sidebar__profile">
-          <div class="profile__name" id="profileName">未选择身份</div>
-          <div class="profile__desc" id="profileDesc">请选择老师 / 学生 / 教育管理者</div>
-        </div>
-      </aside>
+          <div class="role-item" onclick="setRole('admin')">
+            <div class="role-tag">治理端</div>
+            <div class="role-icon">🏛️</div>
+            <div class="role-name">教育管理者</div>
+            <div class="role-desc">治理驾驶舱 / 区县态势 / 风险预警</div>
+          </div>
 
-      <!-- 右侧内容区 -->
-      <section class="content">
-        <!-- 首页 -->
-        <div class="view view--active" id="view-home">
-          <h1 class="h1">今天想做点什么？</h1>
-          <p class="muted">系统已按身份隔离，仅展示你所属角色的业务入口。</p>
-
-          <div class="quick">
-            <div class="quick__item">
-              <div class="quick__title">老师</div>
-              <div class="quick__desc">看趋势 / 查作业 / 诊断薄弱点</div>
-              <button class="btn" onclick="setRole('teacher')">以老师身份进入</button>
-            </div>
-
-            <div class="quick__item">
-              <div class="quick__title">学生</div>
-              <div class="quick__desc">问题解答 / 错题订正 / 学习计划</div>
-              <button class="btn" onclick="setRole('student')">以学生身份进入</button>
-            </div>
-
-            <div class="quick__item">
-              <div class="quick__title">教育管理者</div>
-              <div class="quick__desc">区校指标 / 风险预警 / 治理建议</div>
-              <button class="btn" onclick="setRole('gov')">以管理者身份进入</button>
-            </div>
+          <div class="role-item" onclick="setRole('teacher')">
+            <div class="role-tag">推荐</div>
+            <div class="role-icon">⚡</div>
+            <div class="role-name">快速体验（教师联动）</div>
+            <div class="role-desc">默认进入教师端分析模式，体验异常钻取与学生档案弹窗</div>
           </div>
         </div>
 
-        <!-- 教师工作台 -->
-        <div class="view" id="view-teacher">
-          <h1 class="h1">教师工作台</h1>
-          <p class="muted">聚焦：备课提效、作业批改、学情诊断、班级管理。</p>
-
-          <div class="cards">
-            <div class="card">
-              <div class="card__title">智能备课</div>
-              <div class="card__desc">一句话生成教案大纲 + 课堂活动 + 分层练习题。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-
-            <div class="card">
-              <div class="card__title">作业批改</div>
-              <div class="card__desc">OCR 扫描 + 错因定位 + 个性化讲评建议。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-
-            <div class="card">
-              <div class="card__title">学情分析</div>
-              <div class="card__desc">班级薄弱点热力图 + 分层干预策略。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 学习伴侣 -->
-        <div class="view" id="view-student">
-          <h1 class="h1">学习伴侣</h1>
-          <p class="muted">聚焦：答疑、错题、学习路径、学习陪伴。</p>
-
-          <div class="cards">
-            <div class="card">
-              <div class="card__title">拍题答疑</div>
-              <div class="card__desc">先引导思路，再给步骤，最后给同类题巩固。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-
-            <div class="card">
-              <div class="card__title">错题本</div>
-              <div class="card__desc">自动归类知识点，生成复习清单与闯关练习。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-
-            <div class="card">
-              <div class="card__title">学习计划</div>
-              <div class="card__desc">目标拆解 + 每日任务 + 自测反馈闭环。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 治理驾驶舱 -->
-        <div class="view" id="view-gov">
-          <h1 class="h1">治理驾驶舱</h1>
-          <p class="muted">聚焦：教育治理、质量监测、风险预警、资源调度。</p>
-
-          <div class="cards">
-            <div class="card">
-              <div class="card__title">指标总览</div>
-              <div class="card__desc">学业质量、作业负担、出勤、心理预警等核心指标。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-
-            <div class="card">
-              <div class="card__title">风险预警</div>
-              <div class="card__desc">异常波动识别：成绩下滑、缺勤、舆情、心理风险。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-
-            <div class="card">
-              <div class="card__title">治理建议</div>
-              <div class="card__desc">可执行动作：督导 / 教研 / 资源倾斜 / 专项提升。</div>
-              <button class="btn btn--primary">进入</button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- 身份选择弹窗 -->
-    <div class="modal" id="roleModal" aria-hidden="true">
-      <div class="modal__mask" onclick="closeRoleModal()"></div>
-      <div class="modal__panel">
-        <div class="modal__head">
-          <div class="modal__title">选择身份</div>
-          <button class="btn btn--ghost" onclick="closeRoleModal()">关闭</button>
-        </div>
-
-        <div class="modal__body">
-          <div class="roleGrid">
-            <button class="roleBtn" onclick="setRole('teacher')">
-              👩‍🏫 老师
-              <span>备课 / 批改 / 学情</span>
-            </button>
-
-            <button class="roleBtn" onclick="setRole('student')">
-              🧑‍🎓 学生
-              <span>答疑 / 错题 / 计划</span>
-            </button>
-
-            <button class="roleBtn" onclick="setRole('gov')">
-              🏛️ 教育管理者
-              <span>指标 / 预警 / 治理</span>
-            </button>
-          </div>
+        <div class="role-foot">
+          <button class="btn btn-ghost" onclick="resetRole()">清除身份并重选</button>
+          <button class="btn btn-primary" onclick="setRole('teacher')">进入教师端</button>
         </div>
       </div>
     </div>
 
-    <!-- 关键：JS 在 assets 下 -->
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo-area">
+        <div class="logo-mark">
+          <img
+            src="/assets/digital-human.svg"
+            alt="AI EduBrain"
+            style="width: 28px; height: 28px"
+          />
+        </div>
+        <div class="logo-text">
+          <div class="logo-title">AI EduBrain</div>
+          <div class="logo-sub">K12 教育智能体演示</div>
+        </div>
+        <div class="logo-badge" id="app-version">v0.9.2</div>
+      </div>
+
+      <div class="nav-menu">
+        <div
+          class="nav-item active"
+          data-view="home"
+          onclick="switchView('home', this)"
+        >
+          <div class="nav-icon">🏠</div>
+          首页入口
+        </div>
+
+        <div
+          class="nav-item"
+          id="nav-teacher"
+          data-view="teacher"
+          onclick="switchView('teacher', this)"
+        >
+          <div class="nav-icon">👩‍🏫</div>
+          教师工作台
+        </div>
+
+        <div
+          class="nav-item"
+          id="nav-student"
+          data-view="student"
+          onclick="switchView('student', this)"
+        >
+          <div class="nav-icon">🧑‍🎓</div>
+          学习伴侣
+        </div>
+
+        <div
+          class="nav-item"
+          id="nav-gov"
+          data-view="gov"
+          onclick="switchView('gov', this)"
+        >
+          <div class="nav-icon">🏛️</div>
+          治理驾驶舱
+        </div>
+
+        <div style="margin-top: 10px; padding: 0 10px">
+          <button class="btn btn-ghost" style="width: 100%" onclick="resetRole()">
+            切换身份
+          </button>
+        </div>
+      </div>
+
+      <div class="user-profile">
+        <div class="avatar" id="user-avatar">李</div>
+        <div class="user-meta">
+          <div class="user-name" id="user-name">李老师</div>
+          <div class="user-sub" id="user-sub">数学组 · 七年级</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <section class="main-content">
+      <header class="top-header" id="top-header">
+        <div class="breadcrumb">
+          工作区 / <span id="page-title">首页入口</span>
+        </div>
+
+        <div class="sys-status">
+          <span class="dot"></span>
+          <span>系统正常</span>
+        </div>
+      </header>
+
+      <div class="view-wrapper">
+        <!-- HOME -->
+        <div class="view-container active" id="view-home">
+          <div class="home-hero">
+            <h1>今天想做点什么？</h1>
+            <p>一句话直达入口：备课 / 批改 / 趋势分层异常 / 成长档案 / 治理驾驶舱</p>
+
+            <div class="home-search">
+              <input
+                id="home-input"
+                class="magic-input"
+                placeholder="输入：如「看趋势分层异常」/「批改作业」/「学生成长档案」/「进入治理驾驶舱」"
+              />
+              <button class="btn btn-primary" onclick="startScenarioFromHome()">
+                进入
+              </button>
+            </div>
+
+            <div class="home-role-tip" id="home-role-tip"></div>
+
+            <div class="card-grid">
+              <div
+                class="feature-card"
+                id="home-card-prep"
+                onclick="startScenario('prep')"
+              >
+                <div class="tag">教师</div>
+                <div class="card-emoji">📘</div>
+                <h3>智能备课</h3>
+                <p>生成教案大纲 + 分层练习 + 薄弱点强化环节</p>
+              </div>
+
+              <div
+                class="feature-card"
+                id="home-card-mark"
+                onclick="startScenario('mark')"
+              >
+                <div class="tag">教师</div>
+                <div class="card-emoji">📝</div>
+                <h3>作业批改</h3>
+                <p>模拟扫描 OCR + 异常识别 + 联动分析区</p>
+              </div>
+
+              <div
+                class="feature-card"
+                id="home-card-growth"
+                onclick="setRole('student')"
+              >
+                <div class="tag">学生</div>
+                <div class="card-emoji">📈</div>
+                <h3>成长档案</h3>
+                <p>雷达能力图 + 周趋势 + 差距建议沉淀</p>
+              </div>
+
+              <div
+                class="feature-card"
+                id="home-card-gov"
+                onclick="setRole('admin')"
+              >
+                <div class="tag">管理</div>
+                <div class="card-emoji">🛰️</div>
+                <h3>治理驾驶舱</h3>
+                <p>区校态势 / 风险预警 / 活跃行为流</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TEACHER -->
+        <div class="view-container" id="view-teacher">
+          <div class="teacher-toolbar">
+            <button id="btn-prep" class="btn btn-ghost" onclick="setTeacherMode('prep')">
+              📘 备课
+            </button>
+            <button id="btn-mark" class="btn btn-ghost" onclick="setTeacherMode('mark')">
+              📝 批改
+            </button>
+            <button id="btn-ana" class="btn btn-primary" onclick="setTeacherMode('ana')">
+              📊 分析联动
+            </button>
+
+            <div class="teacher-toolbar-right">
+              <div class="hint-badge">提示：趋势点位 / 分层卡片 / 异常列表均可联动钻取</div>
+            </div>
+          </div>
+
+          <div class="split-layout">
+            <!-- Left Panel: chat -->
+            <div class="panel">
+              <div class="panel-title">
+                <span>🧠 教师助手</span>
+                <span class="panel-sub">对话驱动</span>
+              </div>
+
+              <div class="chat-history" id="chat-box">
+                <div class="msg ai">
+                  <div class="msg-bubble">
+                    你可以输入：<b>“看趋势分层异常”</b> 或 <b>“生成分数应用题教案”</b> 或
+                    <b>“批改作业”</b> 来体验不同模式。
+                  </div>
+                </div>
+              </div>
+
+              <div class="chat-input">
+                <input
+                  id="teacher-input"
+                  placeholder="输入：生成教案 / 批改作业 / 看趋势分层异常..."
+                />
+                <button class="btn btn-primary" onclick="triggerMsg()">发送</button>
+              </div>
+            </div>
+
+            <!-- Right Workspace -->
+            <div class="workspace">
+              <!-- PREP -->
+              <div class="workspace-view active" id="prep-view">
+                <div class="empty-state" id="prep-placeholder">
+                  <div class="empty-icon">📘</div>
+                  <div class="empty-title">备课工作区</div>
+                  <div class="empty-sub">输入“生成分数应用题教案”查看示例结果</div>
+                </div>
+
+                <div id="lesson-result" style="display: none"></div>
+              </div>
+
+              <!-- MARK -->
+              <div class="workspace-view" id="mark-view">
+                <div class="ocr-shell" onclick="runOCR()">
+                  <div class="ocr-tip" id="ocr-tip">点击模拟扫描（OCR）</div>
+
+                  <div class="paper-mock">
+                    <h3>作业样张</h3>
+                    <p>
+                      1) 20 ÷ 3/4 = ?<br />
+                      2) 线段图建模题：已知……<br />
+                      3) 变式题：条件变化……<br />
+                      4) 订正：请写出关键步骤……
+                    </p>
+
+                    <div
+                      class="error-spot"
+                      id="ocr-error"
+                      style="left: 56px; top: 210px"
+                    ></div>
+                  </div>
+
+                  <div class="scan-laser" id="ocr-laser"></div>
+                </div>
+
+                <div class="mark-tip">
+                  扫描完成后，会在当天画像生成异常，并自动切换到「分析联动」视图。
+                </div>
+              </div>
+
+              <!-- ANALYSIS -->
+              <div class="workspace-view" id="ana-view">
+                <div class="ana-grid">
+                  <!-- KPI -->
+                  <div class="ana-card kpi-card">
+                    <div class="kpi-top">
+                      <div>
+                        <div class="kpi-title">今日已批改</div>
+                        <div class="kpi-value" id="kpi-marked">16</div>
+                      </div>
+                      <div class="kpi-icon">📝</div>
+                    </div>
+                    <div class="kpi-sub">
+                      <span>共 32 份作业</span>
+                      <button class="btn btn-ghost btn-sm" onclick="openAnomalyDrawer()">
+                        查看异常汇总
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="ana-card kpi-card">
+                    <div class="kpi-top">
+                      <div>
+                        <div class="kpi-title">掌握度</div>
+                        <div class="kpi-value" id="kpi-mastery">73%</div>
+                      </div>
+                      <div class="kpi-icon">📈</div>
+                    </div>
+                    <div class="kpi-sub">
+                      <span>7日趋势联动</span>
+                      <span id="trend-day-label">周日</span>
+                    </div>
+                  </div>
+
+                  <div class="ana-card kpi-card">
+                    <div class="kpi-top">
+                      <div>
+                        <div class="kpi-title">异常条目</div>
+                        <div class="kpi-value" id="kpi-anomaly">2</div>
+                      </div>
+                      <div class="kpi-icon">⚠️</div>
+                    </div>
+                    <div class="kpi-sub">
+                      <span>可钻取到学生档案</span>
+                      <span id="trend-value-label">73%</span>
+                    </div>
+                  </div>
+
+                  <!-- Trend Chart -->
+                  <div class="ana-card chart-card">
+                    <div class="card-head">
+                      <div>
+                        <div class="card-title">📊 7日掌握度趋势</div>
+                        <div class="card-sub">
+                          点击点位 → 联动刷新分层与异常
+                        </div>
+                      </div>
+                    </div>
+                    <canvas
+                      id="trend-canvas"
+                      width="860"
+                      height="240"
+                      style="width: 100%; height: 240px"
+                    ></canvas>
+                  </div>
+
+                  <!-- Tier -->
+                  <div class="ana-card tier-card">
+                    <div class="card-head">
+                      <div>
+                        <div class="card-title">🧩 分层分布</div>
+                        <div class="card-sub">点击 A/B/C 聚焦联动异常</div>
+                      </div>
+                    </div>
+
+                    <div class="tier-list">
+                      <div class="tier-row" onclick="selectTier('A')">
+                        <div class="tier-left">
+                          <div class="tier-badge A">A</div>
+                          <div>
+                            <div class="tier-name">A 组</div>
+                            <div class="tier-desc">拔高训练</div>
+                          </div>
+                        </div>
+                        <div class="tier-right">
+                          <div class="tier-num">
+                            <span id="tier-a-count">9</span> 人
+                          </div>
+                          <div class="tier-rate" id="tier-a-rate">28%</div>
+                        </div>
+                      </div>
+                      <div class="tier-bar">
+                        <div class="tier-bar-inner A" id="tier-a-bar"></div>
+                      </div>
+
+                      <div class="tier-row" onclick="selectTier('B')">
+                        <div class="tier-left">
+                          <div class="tier-badge B">B</div>
+                          <div>
+                            <div class="tier-name">B 组</div>
+                            <div class="tier-desc">稳态提升</div>
+                          </div>
+                        </div>
+                        <div class="tier-right">
+                          <div class="tier-num">
+                            <span id="tier-b-count">14</span> 人
+                          </div>
+                          <div class="tier-rate" id="tier-b-rate">44%</div>
+                        </div>
+                      </div>
+                      <div class="tier-bar">
+                        <div class="tier-bar-inner B" id="tier-b-bar"></div>
+                      </div>
+
+                      <div class="tier-row" onclick="selectTier('C')">
+                        <div class="tier-left">
+                          <div class="tier-badge C">C</div>
+                          <div>
+                            <div class="tier-name">C 组</div>
+                            <div class="tier-desc">补救优先</div>
+                          </div>
+                        </div>
+                        <div class="tier-right">
+                          <div class="tier-num">
+                            <span id="tier-c-count">9</span> 人
+                          </div>
+                          <div class="tier-rate" id="tier-c-rate">28%</div>
+                        </div>
+                      </div>
+                      <div class="tier-bar">
+                        <div class="tier-bar-inner C" id="tier-c-bar"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Anomaly -->
+                  <div class="ana-card anomaly-card">
+                    <div class="card-head">
+                      <div>
+                        <div class="card-title">🚨 异常钻取</div>
+                        <div class="card-sub">
+                          点击异常 → 弹窗内查看学生成长档案（教师侧不跳学生端）
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="chip-row">
+                      <div class="chip active" onclick="setAnomalyFilter('all', this)">
+                        全部
+                      </div>
+                      <div class="chip" onclick="setAnomalyFilter('missing', this)">
+                        缺交
+                      </div>
+                      <div class="chip" onclick="setAnomalyFilter('error', this)">
+                        错误率
+                      </div>
+                      <div class="chip" onclick="setAnomalyFilter('time', this)">
+                        时长
+                      </div>
+                    </div>
+
+                    <div class="anomaly-list" id="anomaly-list"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /workspace -->
+          </div>
+        </div>
+
+        <!-- STUDENT -->
+        <div class="view-container" id="view-student">
+          <div class="student-top">
+            <div>
+              <div class="student-title">学习伴侣</div>
+              <div class="student-sub">成长档案 / 学习计划 / 即时答疑</div>
+            </div>
+
+            <div class="student-top-right">
+              <div class="student-select">
+                <span class="label">学生：</span>
+                <select id="student-select" onchange="onStudentChange(this.value)">
+                  <option value="S-01">宋扬（S-01）</option>
+                  <option value="S-02">高航（S-02）</option>
+                  <option value="S-04">王铭（S-04）</option>
+                  <option value="S-06">周一帆（S-06）</option>
+                </select>
+              </div>
+
+              <div class="streak-pill">
+                连续打卡 <span id="student-streak">12</span> 天
+              </div>
+            </div>
+          </div>
+
+          <div class="student-tabs">
+            <div class="tab-btn active" id="tab-growth" onclick="setStudentTab('growth')">
+              📈 成长档案
+            </div>
+            <div class="tab-btn" id="tab-qa" onclick="setStudentTab('qa')">
+              💬 即时答疑
+            </div>
+          </div>
+
+          <!-- Growth -->
+          <div class="student-page active" id="student-growth">
+            <div class="student-grid">
+              <!-- Radar -->
+              <div class="student-card">
+                <div style="font-weight: 1000">能力雷达</div>
+                <div class="radar-wrap">
+                  <canvas id="radar-canvas" width="320" height="240"></canvas>
+                  <div class="radar-legend">
+                    <div class="legend-item">
+                      <span class="dot dot-a"></span> 当前
+                    </div>
+                    <div class="legend-item">
+                      <span class="dot dot-b"></span> 目标
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gap-box">
+                  <div class="gap-title">差距建议（可执行）</div>
+                  <ul class="gap-list" id="gap-list"></ul>
+                </div>
+              </div>
+
+              <!-- Weekly -->
+              <div class="student-card">
+                <div style="font-weight: 1000">本周趋势</div>
+
+                <div class="week-kpis">
+                  <div class="wk">
+                    <div class="wk-l">最新掌握度</div>
+                    <div class="wk-v" id="wk-mastery">76%</div>
+                  </div>
+                  <div class="wk">
+                    <div class="wk-l">错题总量</div>
+                    <div class="wk-v" id="wk-wrong">18</div>
+                  </div>
+                  <div class="wk">
+                    <div class="wk-l">学习时长</div>
+                    <div class="wk-v" id="wk-min">120</div>
+                  </div>
+                </div>
+
+                <canvas id="week-canvas" width="520" height="240"></canvas>
+
+                <div class="student-actions">
+                  <button class="btn btn-primary" onclick="generateWeeklyReview()">
+                    生成周度复盘
+                  </button>
+                  <button class="btn btn-ghost" onclick="recommendResources()">
+                    推荐学习资源
+                  </button>
+                  <button class="btn btn-ghost" onclick="askArchive()">
+                    查询档案总结
+                  </button>
+                </div>
+
+                <div class="resource-row" id="resource-row"></div>
+              </div>
+
+              <!-- Archive -->
+              <div class="student-card">
+                <div style="font-weight: 1000">成长档案沉淀</div>
+                <div class="archive-list" id="archive-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- QA -->
+          <div class="student-page" id="student-qa">
+            <div class="qa-layout">
+              <div class="qa-card">
+                <div style="font-weight: 1000">即时答疑</div>
+
+                <div class="qa-chat" id="qa-chat">
+                  <div class="qa-msg ai">
+                    <div class="qa-bubble">
+                      你可以直接发题目，我会分步讲解并把错题归档到错题本。
+                    </div>
+                  </div>
+                </div>
+
+                <div class="qa-input">
+                  <input
+                    id="qa-input"
+                    placeholder="输入问题：如 20 ÷ 3/4 怎么算？"
+                  />
+                  <button class="btn btn-primary" onclick="sendQA()">发送</button>
+                </div>
+
+                <div class="qa-suggest">
+                  <div class="qa-chip" onclick="quickAsk('20 ÷ 3/4 怎么算？')">
+                    20 ÷ 3/4
+                  </div>
+                  <div class="qa-chip" onclick="quickAsk('单位1怎么找？')">单位1怎么找</div>
+                  <div class="qa-chip" onclick="quickAsk('帮我改作文更通顺')">
+                    改作文通顺
+                  </div>
+                </div>
+              </div>
+
+              <div class="qa-side">
+                <div class="student-card">
+                  <div style="font-weight: 1000">错题本</div>
+                  <div class="wrongbook" id="wrongbook"></div>
+                </div>
+
+                <div class="student-card">
+                  <div style="font-weight: 1000">扩展推荐</div>
+                  <div class="extend-reco" id="extend-reco"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GOV -->
+        <div class="view-container gov-container" id="view-gov">
+          <div class="gov-overlay">
+            <div>
+              <h2>治理驾驶舱（示例）</h2>
+              <div style="opacity: 0.75; font-size: 12px">
+                区校态势 · 风险预警 · 活跃行为流
+              </div>
+            </div>
+
+            <div class="gov-metric">
+              <div class="gov-metric-value">+12%</div>
+              <div class="gov-metric-label">本周活跃度</div>
+            </div>
+          </div>
+
+          <div class="map-stage">
+            <div class="map-grid" id="map-grid"></div>
+          </div>
+
+          <div class="live-feed">
+            <div class="feed-title">实时行为流</div>
+            <div id="feed-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal -->
+    <div id="modal" class="modal" style="display: none">
+      <div class="modal-mask" onclick="closeModal()"></div>
+      <div class="modal-card">
+        <div class="modal-head">
+          <div class="modal-title" id="modal-title">弹窗</div>
+          <button class="btn btn-ghost btn-sm" onclick="closeModal()">关闭</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-foot">
+          <button class="btn btn-primary btn-sm" onclick="closeModal()">完成</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- JS -->
     <script src="/assets/app.js"></script>
-
-    <script>
-      // 兜底：如果 app.js 没加载（路径404），这里会提示你排查资源路径
-      window.addEventListener("error", function () {
-        const status = document.getElementById("systemStatus");
-        if (status) status.textContent = "资源加载异常（请检查 /assets/app.js 与 /assets/app.css）";
-      });
-
-      // 切换身份：清掉缓存并打开身份弹窗
-      document.getElementById("btnSwitchRole")?.addEventListener("click", function () {
-        try {
-          localStorage.removeItem("edubrain_role");
-        } catch (e) {}
-        openRoleModal();
-      });
-
-      // 首次进入：没有身份就弹窗，有身份就按身份渲染
-      document.addEventListener("DOMContentLoaded", function () {
-        try {
-          const role = localStorage.getItem("edubrain_role");
-          if (!role) openRoleModal();
-          else {
-            if (typeof applyRoleUI === "function") applyRoleUI(role);
-            if (typeof switchView === "function") switchView("home");
-          }
-        } catch (e) {
-          openRoleModal();
-        }
-      });
-
-      // 弹窗兜底（就算 app.js 没写这俩函数，这里也能用）
-      function openRoleModal() {
-        const m = document.getElementById("roleModal");
-        if (!m) return;
-        m.classList.add("modal--open");
-        m.setAttribute("aria-hidden", "false");
-      }
-
-      function closeRoleModal() {
-        const m = document.getElementById("roleModal");
-        if (!m) return;
-        m.classList.remove("modal--open");
-        m.setAttribute("aria-hidden", "true");
-      }
-    </script>
   </body>
 </html>
