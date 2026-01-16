@@ -10,7 +10,7 @@
    *  -------------------------- */
   const App = {
     version: "v0.9.2-role",
-    role: null, // 'teacher' | 'student'
+    role: null, // 'teacher' | 'student' | 'admin'
     view: "home",
 
     teacherMode: "prep", // prep | mark | ana
@@ -225,9 +225,10 @@
   }
 
   function roleAllowedViews(role) {
-    // 你要求：老师进来只有老师板块
+    // 你要求：不同身份仅展示对应板块
     if (role === "teacher") return ["home", "teacher"];
     if (role === "student") return ["home", "student"];
+    if (role === "admin") return ["home", "gov"];
     return ["home"];
   }
 
@@ -242,23 +243,26 @@
 
     if (navTeacher) navTeacher.style.display = allowed.includes("teacher") ? "flex" : "none";
     if (navStudent) navStudent.style.display = allowed.includes("student") ? "flex" : "none";
-    if (navGov) navGov.style.display = "none"; // demo 默认不放治理
+    if (navGov) navGov.style.display = allowed.includes("gov") ? "flex" : "none";
 
     // 首页卡片按角色隐藏（增强“只看到自己板块”的一致性）
     const cPrep = $("#home-card-prep");
     const cMark = $("#home-card-mark");
     const cGrowth = $("#home-card-growth");
+    const cGov = $("#home-card-gov");
 
     if (cPrep) cPrep.style.display = role === "teacher" ? "block" : "none";
     if (cMark) cMark.style.display = role === "teacher" ? "block" : "none";
     if (cGrowth) cGrowth.style.display = role === "student" ? "block" : "none";
+    if (cGov) cGov.style.display = role === "admin" ? "block" : "none";
 
     // 首页提示
     const tip = $("#home-role-tip");
     if (tip) {
       tip.style.display = "block";
       if (role === "teacher") tip.innerHTML = `当前身份：<b>教师</b>。你将仅看到教师相关入口（备课/批改/学情联动）。`;
-      else if (role === "student") tip.innerHTML = `当前身份：<b>学生</b>。你将仅看到学生相关入口（成长档案/即时答疑）。`;
+      else if (role === "student") tip.innerHTML = `当前身份：<b>学生</b>。你将仅看到学生相关入口（成长档案/即时答疑）。`
+      else if (role === "admin") tip.innerHTML = `当前身份：<b>教育管理者</b>。你将仅看到管理相关入口（治理驾驶舱/区县态势/风险预警）。`;
       else tip.style.display = "none";
     }
 
@@ -275,6 +279,12 @@
       if (avatar) avatar.textContent = st.name.slice(0, 1);
       if (name) name.textContent = st.name;
       if (sub) sub.textContent = `${st.grade} · 学生`;
+
+    } else if (role === "admin") {
+      if (avatar) avatar.textContent = "教";
+      if (name) name.textContent = "教育管理者";
+      if (sub) sub.textContent = "区县教育局 · 管理端";
+
     }
   }
 
@@ -290,17 +300,34 @@
       switchView("teacher", document.querySelector('[data-view="teacher"]'));
       setTeacherMode("ana");
       showToast("已以教师身份进入");
-    } else {
+      return;
+    }
+
+    if (role === "student") {
       switchView("student", document.querySelector('[data-view="student"]'));
       setStudentTab("growth");
       ensureStudentMounted();
       showToast("已以学生身份进入");
+      return;
+    }
+
+    // admin / 教育管理者
+    if (role === "admin") {
+      switchView("gov", document.querySelector('[data-view="gov"]'));
+      showToast("已以教育管理者身份进入");
+      return;
     }
   }
 
-  function ensureRoleReady() {
+  function resetRole() {
+    try { localStorage.removeItem("edubrain_role"); } catch(e) {}
+    // 简单粗暴：刷新页面，让选择身份弹窗重新出现
+    location.reload();
+  }
+
+function ensureRoleReady() {
     const saved = localStorage.getItem("edubrain_role");
-    if (saved === "teacher" || saved === "student") {
+    if (saved === "teacher" || saved === "student" || saved === "admin") {
       App.role = saved;
       applyRoleUI();
       hideRoleGate();
@@ -308,10 +335,12 @@
       if (saved === "teacher") {
         switchView("teacher", document.querySelector('[data-view="teacher"]'));
         setTeacherMode("ana");
-      } else {
+      } else if (saved === "student") {
         switchView("student", document.querySelector('[data-view="student"]'));
         setStudentTab("growth");
         ensureStudentMounted();
+      } else {
+        switchView("gov", document.querySelector('[data-view="gov"]'));
       }
       return;
     }
@@ -408,7 +437,11 @@
    *  Home Scenario
    *  -------------------------- */
   function startScenario(type) {
-    // 角色隔离：老师只去教师，学生只去学生
+    // 角色隔离：老师只去教师，学生只去学生，管理者只去治理
+    if (App.role === "admin") {
+      switchView("gov", document.querySelector('[data-view="gov"]'));
+      return;
+    }
     if (App.role === "student") {
       switchView("student", document.querySelector('[data-view="student"]'));
       setStudentTab("growth");
@@ -433,6 +466,10 @@
   function startScenarioFromHome() {
     const v = ($("#home-input")?.value || "").trim();
     if (!v) {
+      if (App.role === "admin") {
+        switchView("gov", document.querySelector('[data-view="gov"]'));
+        return;
+      }
       if (App.role === "student") {
         switchView("student", document.querySelector('[data-view="student"]'));
         setStudentTab("growth");
@@ -450,6 +487,21 @@
         return;
       }
       return startScenario("prep");
+    }
+
+
+    if (App.role === "admin") {
+      // 管理者默认进入治理驾驶舱
+      switchView("gov", document.querySelector('[data-view="gov"]'));
+      showToast("已进入治理驾驶舱");
+      return;
+    }
+
+    // admin role
+    if (App.role === "admin") {
+      switchView("gov", document.querySelector('[data-view="gov"]'));
+      showToast("已进入治理驾驶舱");
+      return;
     }
 
     // student role
@@ -1476,6 +1528,8 @@
    *  Expose to window (for inline onclick)
    *  -------------------------- */
   window.setRole = setRole;
+  window.resetRole = resetRole;
+  window.resetRole = resetRole;
 
   window.switchView = switchView;
   window.setTeacherMode = setTeacherMode;
