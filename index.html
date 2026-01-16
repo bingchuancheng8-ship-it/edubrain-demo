@@ -2,259 +2,326 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI EduBrain Demo</title>
 
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/assets/app.css" />
+  <!-- favicon（可选，没有也不影响） -->
+  <link rel="icon" href="./assets/favicon.svg?v=091" />
+
+  <!-- 强制更新缓存：加 ?v=091 -->
+  <link rel="stylesheet" href="./assets/app.css?v=091" />
   <meta name="theme-color" content="#4f46e5" />
 
-  <script defer src="/assets/app.js?v=091"></script>
+  <script defer src="./assets/app.js?v=091"></script>
 </head>
 
 <body>
-  <!-- ===== Sidebar ===== -->
+  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="logo-area">
-      <img class="logo-icon" src="/assets/digital-human.svg" alt="EduBrain" />
+      <div class="logo-icon">
+        <!-- 数字人 icon（纯 SVG，不依赖额外文件） -->
+        <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <radialGradient id="g1" cx="30%" cy="30%" r="80%">
+              <stop offset="0%" stop-color="#A5B4FC"/>
+              <stop offset="45%" stop-color="#6366F1"/>
+              <stop offset="100%" stop-color="#4F46E5"/>
+            </radialGradient>
+          </defs>
+          <circle cx="32" cy="32" r="30" fill="url(#g1)" opacity="0.18"></circle>
+          <circle cx="32" cy="32" r="24" fill="url(#g1)"></circle>
+          <circle cx="26" cy="30" r="3" fill="#fff"></circle>
+          <circle cx="38" cy="30" r="3" fill="#fff"></circle>
+          <path d="M24 40c3.5 3 7.3 4.5 8 4.5S36.5 43 40 40" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <path d="M18 22c4-6 10-10 14-10s10 4 14 10" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+
       <div class="logo-text">
         <div class="logo-title">AI EduBrain</div>
         <div class="logo-sub">K12 学段成长智能体</div>
       </div>
-      <span class="badge" id="app-version">v0.9.0-demo</span>
+
+      <span class="badge" id="app-version">v0.9.1-demo</span>
     </div>
 
-    <nav class="nav-menu">
-      <div class="nav-item active" onclick="switchView('home', this)">
-        <span class="nav-icon">🏠</span> 首页入口
-      </div>
-
-      <div class="nav-item" onclick="switchView('teacher', this)">
-        <span class="nav-icon">👩‍🏫</span> 教师工作台
-      </div>
-
-      <div class="nav-item" onclick="switchView('student', this)">
-        <span class="nav-icon">🎓</span> 学习伴侣
-      </div>
-
-      <div class="nav-item" onclick="switchView('gov', this)">
-        <span class="nav-icon">🌍</span> 治理驾驶舱
-      </div>
+    <nav class="nav-menu" id="nav-menu">
+      <button class="nav-item active" data-view="home">
+        <span class="nav-icon">🏠</span><span>首页入口</span>
+      </button>
+      <button class="nav-item" data-view="teacher">
+        <span class="nav-icon">🧑‍🏫</span><span>教师工作台</span>
+      </button>
+      <button class="nav-item" data-view="student">
+        <span class="nav-icon">🎓</span><span>学习伴侣</span>
+      </button>
+      <button class="nav-item" data-view="gov">
+        <span class="nav-icon">🌍</span><span>治理驾驶舱</span>
+      </button>
     </nav>
 
     <div class="user-profile">
       <div class="avatar">李</div>
-      <div class="user-info">
+      <div class="user-meta">
         <div class="user-name">李老师</div>
         <div class="user-sub">数学组 · 初二</div>
       </div>
     </div>
   </aside>
 
-  <!-- ===== Main ===== -->
-  <main class="main-content">
+  <!-- Main -->
+  <main class="main">
     <header class="top-header" id="top-header">
-      <div class="breadcrumb">
-        工作区 /
-        <span id="page-title" class="page-title">首页入口</span>
-      </div>
-
-      <div class="sys-status">
-        <span class="dot"></span>
-        系统正常
+      <div class="crumbs">工作区 / <span id="page-title">首页入口</span></div>
+      <div class="status-pill">
+        <span class="dot"></span> 系统正常
       </div>
     </header>
 
-    <section class="view-wrapper">
-
-      <!-- ===== Home ===== -->
-      <div id="view-home" class="view-container active">
+    <section class="view-wrap">
+      <!-- HOME -->
+      <div class="view active" id="view-home">
         <div class="home-hero">
           <h1>今天想做点什么？</h1>
           <p>全链路教育大模型已就绪</p>
 
-          <input
-            type="text"
-            class="magic-input"
-            placeholder="输入：'帮我备课' 或 '批改作业'"
-            onkeypress="if(event.key==='Enter') startScenario('prep')"
-          />
+          <div class="home-search">
+            <input id="home-input" class="magic-input" placeholder="输入：'帮我备课' 或 '批改作业'" />
+            <button class="btn btn-primary" id="home-go">开始</button>
+          </div>
 
           <div class="card-grid">
-            <div class="feature-card" onclick="startScenario('prep')">
-              <div class="feature-icon">📘</div>
-              <h3>智能备课</h3>
-              <p>生成可视化教案</p>
+            <div class="feature-card" data-action="goto-teacher-prep">
+              <div class="fc-emoji">📘</div>
+              <div class="fc-title">智能备课</div>
+              <div class="fc-sub">生成可视化教案</div>
             </div>
 
-            <div class="feature-card" onclick="startScenario('mark')">
-              <div class="feature-icon">✍️</div>
-              <h3>作业批改</h3>
-              <p>OCR 扫描诊断</p>
+            <div class="feature-card" data-action="goto-teacher-mark">
+              <div class="fc-emoji">✍️</div>
+              <div class="fc-title">作业批改</div>
+              <div class="fc-sub">OCR 扫描诊断</div>
             </div>
 
-            <div class="feature-card" onclick="switchView('student', document.querySelectorAll('.nav-item')[2])">
-              <div class="feature-icon">🎧</div>
-              <h3>学习伴侣</h3>
-              <p>成长档案 + 自主学习问答</p>
+            <div class="feature-card" data-action="goto-student">
+              <div class="fc-emoji">🎧</div>
+              <div class="fc-title">学习伴侣</div>
+              <div class="fc-sub">成长档案 + 自主学习问答</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ===== Teacher ===== -->
-      <div id="view-teacher" class="view-container">
+      <!-- TEACHER -->
+      <div class="view" id="view-teacher">
         <div class="teacher-toolbar">
-          <button id="btn-prep" class="btn btn-primary" onclick="setTeacherMode('prep')">📚 备课模式</button>
-          <button id="btn-mark" class="btn btn-ghost" onclick="setTeacherMode('mark')">✍️ 批改模式</button>
+          <button class="btn btn-primary" id="btn-prep" data-mode="prep">📚 备课模式</button>
+          <button class="btn btn-ghost" id="btn-mark" data-mode="mark">✍️ 批改模式</button>
         </div>
 
-        <div class="teacher-shell">
-          <!-- Left: chat panel -->
-          <div class="panel">
-            <div class="panel-title">AI 教学助手</div>
+        <div class="teacher-layout">
+          <!-- left: chat -->
+          <div class="panel chat-panel">
+            <div class="panel-hd">AI 教学助手</div>
 
-            <div class="chat-history" id="chat-box">
+            <div class="chat-box" id="chat-box">
               <div class="msg ai">
-                <div class="msg-bubble">李老师好！我是您的智能备课助理。</div>
+                <div class="bubble">李老师好！我是您的智能备课助理。</div>
               </div>
             </div>
 
-            <div class="chat-input-wrap">
-              <input
-                type="text"
-                id="teacher-input"
-                class="chat-input"
-                placeholder="输入指令..."
-                onkeypress="if(event.key==='Enter') triggerMsg()"
-              />
+            <div class="chat-input">
+              <input id="teacher-input" placeholder="输入指令：如 '帮我生成分数应用题教学设计' 或 '查看本周异常'" />
+              <button class="btn btn-primary" id="teacher-send">发送</button>
             </div>
           </div>
 
-          <!-- Right: workspace -->
-          <div class="teacher-main">
-            <div class="section-title">📌 教学工作区</div>
-            <div class="section-body">
+          <!-- right: workspace + analytics -->
+          <div class="panel work-panel">
+            <div class="panel-hd">📌 教学工作区</div>
 
-              <!-- placeholder -->
-              <div id="prep-placeholder" class="center-placeholder">
-                <div class="placeholder-icon">✨</div>
-                <div class="placeholder-title">AI 魔法准备中</div>
-                <div class="placeholder-sub">选择左侧模式并输入指令开始</div>
+            <!-- workspace area -->
+            <div class="work-area" id="work-area">
+              <div class="work-placeholder" id="prep-placeholder">
+                <div class="spark">✨</div>
+                <div class="ph-title">AI 魔法准备中</div>
+                <div class="ph-sub">选择左侧模式并输入指令开始</div>
               </div>
 
-              <!-- lesson -->
               <div id="lesson-result" style="display:none;"></div>
 
-              <!-- OCR -->
-              <div
-                id="ocr-interface"
-                class="ocr-interface"
-                style="display:none;"
-                onclick="runOCR(this)"
-              >
-                <div id="ocr-tip" class="ocr-tip">📸 点击屏幕模拟扫描</div>
-
-                <div class="ocr-stage">
-                  <div class="paper-mock">
-                    <h3 style="text-align:center; margin-top:0;">数学单元测试</h3>
-                    <p style="font-family:monospace; font-size:12px; color:#333; line-height:2;">
-                      1. 1/2 + 1/3 = 5/6 (✓)<br>
-                      2. 甲是乙的 3/4...<br>
-                      &nbsp;&nbsp;20 ÷ 3/4 = 80/3 (✗)
-                    </p>
-                    <div class="error-spot" style="top:125px; left:80px"></div>
-                  </div>
+              <div id="ocr-interface" class="ocr" style="display:none;">
+                <div class="ocr-tip" id="ocr-tip">📸 点击屏幕模拟扫描</div>
+                <div class="paper">
+                  <h3>数学单元测试</h3>
+                  <p>
+                    1. 1/2 + 1/3 = 5/6 (✓)<br />
+                    2. 甲是乙的 3/4...<br />
+                    &nbsp;&nbsp;20 ÷ 3/4 = 80/3 (✗)
+                  </p>
+                  <div class="error-spot" id="ocr-error"></div>
                 </div>
+                <div class="scan-laser" id="scan-laser"></div>
+              </div>
+            </div>
 
-                <div class="scan-laser"></div>
+            <!-- KPI -->
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-name">今日批改</div>
+                <div class="kpi-val" id="kpi-marked">18</div>
+                <div class="kpi-sub">已完成 / 共 32</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-name">近7天掌握度</div>
+                <div class="kpi-val"><span id="kpi-mastery">73</span>%</div>
+                <div class="kpi-sub">较上周 <span class="pos">+2%</span></div>
+              </div>
+              <div class="kpi-card kpi-warn">
+                <div class="kpi-name">异常预警</div>
+                <div class="kpi-val" id="kpi-anomaly">3</div>
+                <div class="kpi-sub">可点击钻取详情</div>
+              </div>
+            </div>
+
+            <!-- 联动分析区：趋势图 + 分层 + 异常钻取 -->
+            <div class="insight-grid">
+              <div class="insight-card" id="trend-card">
+                <div class="insight-hd">
+                  <div class="insight-title">📈 班级趋势（近7天掌握度）</div>
+                  <div class="insight-sub">点击折线点位 → 联动分层与异常</div>
+                </div>
+                <div class="trend-wrap">
+                  <svg id="trend-svg" class="trend-svg" viewBox="0 0 520 160" preserveAspectRatio="none"></svg>
+                </div>
               </div>
 
-              <!-- quick stats to avoid blank feel -->
-              <div class="teacher-kpi-row">
-                <div class="kpi-card">
-                  <div class="kpi-title">今日批改</div>
-                  <div class="kpi-value">18</div>
-                  <div class="kpi-sub">已完成 / 共 32</div>
+              <div class="insight-card" id="layer-card">
+                <div class="insight-hd">
+                  <div class="insight-title">👥 班级分层（A/B/C）</div>
+                  <div class="insight-sub">用于作业分层、精准补救、拔高提升</div>
                 </div>
-
-                <div class="kpi-card">
-                  <div class="kpi-title">近7天掌握度</div>
-                  <div class="kpi-value">73%</div>
-                  <div class="kpi-sub">较上周 +2%</div>
-                </div>
-
-                <div class="kpi-card">
-                  <div class="kpi-title">异常预警</div>
-                  <div class="kpi-value">3</div>
-                  <div class="kpi-sub">可点击钻取详情</div>
-                </div>
+                <div class="layers" id="layers"></div>
               </div>
 
+              <div class="insight-card" id="anomaly-card">
+                <div class="insight-hd">
+                  <div class="insight-title">⚠️ 异常钻取</div>
+                  <div class="insight-sub">点击异常 → 进入详情与建议动作</div>
+                </div>
+                <div class="anomaly-list" id="anomaly-list"></div>
+              </div>
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- ===== Student ===== -->
-      <div id="view-student" class="view-container">
+      <!-- STUDENT -->
+      <div class="view" id="view-student">
         <div class="student-header">
-          <h1>👋 早上好，小明</h1>
-          <span class="student-streak">🔥 打卡 12 天</span>
+          <div>
+            <h2>👋 早上好，小明</h2>
+            <p class="muted">你的学习伴侣已完成本周诊断与建议更新</p>
+          </div>
+          <div class="streak">🔥 打卡 12 天</div>
         </div>
 
         <div class="student-grid">
-          <div class="task-card task-primary" onclick="openVoiceModal()">
-            <div class="task-float-icon">🎙️</div>
-            <h2>Unit 3 课文跟读</h2>
-            <p>预计用时 5 分钟</p>
-            <button class="btn btn-light">开始挑战</button>
+          <div class="panel student-card">
+            <div class="panel-hd">🎯 成长档案</div>
+            <div class="profile-body">
+              <div class="profile-kpis">
+                <div class="mini-kpi">
+                  <div class="mk-name">数学掌握度</div>
+                  <div class="mk-val">76%</div>
+                </div>
+                <div class="mini-kpi">
+                  <div class="mk-name">本周错题</div>
+                  <div class="mk-val">14</div>
+                </div>
+                <div class="mini-kpi">
+                  <div class="mk-name">阅读理解</div>
+                  <div class="mk-val">B+</div>
+                </div>
+              </div>
+
+              <div class="timeline">
+                <div class="tl-item">
+                  <div class="tl-dot"></div>
+                  <div class="tl-main">
+                    <div class="tl-title">周度复盘：代数计算波动</div>
+                    <div class="tl-sub">建议：优先完成 3 组基础计算练习，再挑战综合题</div>
+                  </div>
+                </div>
+                <div class="tl-item">
+                  <div class="tl-dot"></div>
+                  <div class="tl-main">
+                    <div class="tl-title">能力对标：几何推理待加强</div>
+                    <div class="tl-sub">建议：每天 10 分钟画图 + 推理题 2 题</div>
+                  </div>
+                </div>
+                <div class="tl-item">
+                  <div class="tl-dot"></div>
+                  <div class="tl-main">
+                    <div class="tl-title">资源推送：微课《分数乘除法》</div>
+                    <div class="tl-sub">已为你匹配适配难度与练习包</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn btn-primary" id="btn-student-ask">立即问答</button>
+                <button class="btn btn-ghost" id="btn-student-review">查看错题本</button>
+              </div>
+            </div>
           </div>
 
-          <div class="task-card">
-            <span class="tag tag-danger">错题巩固</span>
-            <h3>分数乘除法</h3>
-            <p>3 道变式题待完成</p>
+          <div class="panel student-card">
+            <div class="panel-hd">💬 即时自主学习问答</div>
+            <div class="qa-box" id="qa-box">
+              <div class="msg ai"><div class="bubble">你可以拍照/语音/文字提问。我会按步骤讲解，并给你同类巩固。</div></div>
+            </div>
+            <div class="chat-input">
+              <input id="student-input" placeholder="例如：这道几何题怎么做？/ 帮我改作文" />
+              <button class="btn btn-primary" id="student-send">发送</button>
+            </div>
           </div>
-        </div>
-
-        <!-- voice modal -->
-        <div class="voice-modal" id="voice-modal">
-          <h2 style="margin-bottom:10px;">正在跟读...</h2>
-          <div class="wave-wrap">
-            <div class="wave-bar" style="animation-delay:0s"></div>
-            <div class="wave-bar" style="animation-delay:0.1s"></div>
-            <div class="wave-bar" style="animation-delay:0.2s"></div>
-            <div class="wave-bar" style="animation-delay:0.3s"></div>
-            <div class="wave-bar" style="animation-delay:0.4s"></div>
-          </div>
-          <div class="quote">"Actions speak louder than words."</div>
-          <button class="btn btn-primary" onclick="closeVoiceModal()">完成录音</button>
         </div>
       </div>
 
-      <!-- ===== Gov ===== -->
-      <div id="view-gov" class="view-container gov-container">
-        <div class="gov-overlay">
-          <h2>🏙️ 区域教育大脑</h2>
-          <div style="text-align:right;">
-            <div style="color:#38bdf8; font-weight:900; font-size:20px;">92.4%</div>
-            <div style="font-size:12px; opacity:0.7;">AI 备课覆盖率</div>
+      <!-- GOV -->
+      <div class="view" id="view-gov">
+        <div class="gov-hero">
+          <div class="gov-title">🏙️ 区域教育大脑</div>
+          <div class="gov-kpi">
+            <div class="big">92.4%</div>
+            <div class="sub">AI 备课覆盖率</div>
           </div>
         </div>
 
-        <div class="live-feed">
-          <div class="feed-title">⚡️ 实时动态</div>
-          <div id="feed-list"></div>
-        </div>
-
-        <div class="map-stage">
-          <div class="map-grid" id="map-grid"></div>
+        <div class="gov-grid">
+          <div class="panel gov-card">
+            <div class="panel-hd">⚡ 实时动态</div>
+            <div class="feed" id="feed-list"></div>
+          </div>
+          <div class="panel gov-card">
+            <div class="panel-hd">🌐 区域态势</div>
+            <div class="gov-map" id="gov-map"></div>
+          </div>
         </div>
       </div>
-
     </section>
   </main>
+
+  <!-- 抽屉钻取 -->
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-hd">
+      <div class="drawer-title" id="drawer-title">钻取详情</div>
+      <button class="icon-btn" id="drawer-close">✕</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
 </body>
 </html>
