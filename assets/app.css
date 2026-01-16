@@ -78,7 +78,7 @@ body{
 
 .role-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:repeat(3,1fr);
   gap:14px;
   padding:16px 18px;
 }
@@ -1320,4 +1320,10 @@ body{
   .split-layout{ grid-template-columns:1fr; height:auto; }
   .student-grid{ grid-template-columns:1fr; }
   .qa-layout{ grid-template-columns:1fr; }
+}
+
+
+@media (max-width: 720px){
+  .role-grid{ grid-template-columns:1fr; }
+  body{ overflow:auto; }
 }
