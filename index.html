@@ -5,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI EduBrain Demo</title>
 
-  <!-- favicon（可选，没有也不影响） -->
-  <link rel="icon" href="./assets/favicon.svg?v=091" />
-
-  <!-- 强制更新缓存：加 ?v=091 -->
-  <link rel="stylesheet" href="./assets/app.css?v=091" />
+  <link rel="icon" href="./assets/favicon.svg?v=092" />
+  <link rel="stylesheet" href="./assets/app.css?v=092" />
   <meta name="theme-color" content="#4f46e5" />
 
-  <script defer src="./assets/app.js?v=091"></script>
+  <script defer src="./assets/app.js?v=092"></script>
 </head>
 
 <body>
@@ -20,7 +17,7 @@
   <aside class="sidebar">
     <div class="logo-area">
       <div class="logo-icon">
-        <!-- 数字人 icon（纯 SVG，不依赖额外文件） -->
+        <!-- 数字人 icon（纯 SVG） -->
         <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
           <defs>
             <radialGradient id="g1" cx="30%" cy="30%" r="80%">
@@ -43,7 +40,7 @@
         <div class="logo-sub">K12 学段成长智能体</div>
       </div>
 
-      <span class="badge" id="app-version">v0.9.1-demo</span>
+      <span class="badge" id="app-version">v0.9.2-demo</span>
     </div>
 
     <nav class="nav-menu" id="nav-menu">
@@ -132,7 +129,7 @@
             </div>
 
             <div class="chat-input">
-              <input id="teacher-input" placeholder="输入指令：如 '帮我生成分数应用题教学设计' 或 '查看本周异常'" />
+              <input id="teacher-input" placeholder="输入指令：如 '生成分数应用题教学设计' 或 '查看本周异常'" />
               <button class="btn btn-primary" id="teacher-send">发送</button>
             </div>
           </div>
@@ -185,12 +182,12 @@
               </div>
             </div>
 
-            <!-- 联动分析区：趋势图 + 分层 + 异常钻取 -->
+            <!-- 联动分析区：趋势图 + 分层 + 异常 + 名单 -->
             <div class="insight-grid">
               <div class="insight-card" id="trend-card">
                 <div class="insight-hd">
                   <div class="insight-title">📈 班级趋势（近7天掌握度）</div>
-                  <div class="insight-sub">点击折线点位 → 联动分层与异常</div>
+                  <div class="insight-sub">点击折线点位 → 联动分层 / 异常 / 名单高亮</div>
                 </div>
                 <div class="trend-wrap">
                   <svg id="trend-svg" class="trend-svg" viewBox="0 0 520 160" preserveAspectRatio="none"></svg>
@@ -203,6 +200,18 @@
                   <div class="insight-sub">用于作业分层、精准补救、拔高提升</div>
                 </div>
                 <div class="layers" id="layers"></div>
+
+                <div class="mini-divider"></div>
+
+                <div class="roster-hd">
+                  <div class="roster-title">📋 班级名单</div>
+                  <button class="chip chip-ghost" id="btn-clear-filter">清除筛选</button>
+                </div>
+
+                <div class="roster-search">
+                  <input id="roster-search" placeholder="搜索学生（如：王晨）" />
+                </div>
+                <div class="roster-list" id="roster"></div>
               </div>
 
               <div class="insight-card" id="anomaly-card">
@@ -210,6 +219,9 @@
                   <div class="insight-title">⚠️ 异常钻取</div>
                   <div class="insight-sub">点击异常 → 进入详情与建议动作</div>
                 </div>
+
+                <div class="chips" id="anomaly-filters"></div>
+
                 <div class="anomaly-list" id="anomaly-list"></div>
               </div>
             </div>
@@ -221,10 +233,10 @@
       <div class="view" id="view-student">
         <div class="student-header">
           <div>
-            <h2>👋 早上好，小明</h2>
+            <h2>👋 早上好，<span id="student-name">小明</span></h2>
             <p class="muted">你的学习伴侣已完成本周诊断与建议更新</p>
           </div>
-          <div class="streak">🔥 打卡 12 天</div>
+          <div class="streak" id="student-streak">🔥 打卡 12 天</div>
         </div>
 
         <div class="student-grid">
@@ -234,41 +246,19 @@
               <div class="profile-kpis">
                 <div class="mini-kpi">
                   <div class="mk-name">数学掌握度</div>
-                  <div class="mk-val">76%</div>
+                  <div class="mk-val"><span id="st-math">76</span>%</div>
                 </div>
                 <div class="mini-kpi">
                   <div class="mk-name">本周错题</div>
-                  <div class="mk-val">14</div>
+                  <div class="mk-val" id="st-wrong">14</div>
                 </div>
                 <div class="mini-kpi">
-                  <div class="mk-name">阅读理解</div>
-                  <div class="mk-val">B+</div>
+                  <div class="mk-name">学习分层</div>
+                  <div class="mk-val" id="st-group">B+</div>
                 </div>
               </div>
 
-              <div class="timeline">
-                <div class="tl-item">
-                  <div class="tl-dot"></div>
-                  <div class="tl-main">
-                    <div class="tl-title">周度复盘：代数计算波动</div>
-                    <div class="tl-sub">建议：优先完成 3 组基础计算练习，再挑战综合题</div>
-                  </div>
-                </div>
-                <div class="tl-item">
-                  <div class="tl-dot"></div>
-                  <div class="tl-main">
-                    <div class="tl-title">能力对标：几何推理待加强</div>
-                    <div class="tl-sub">建议：每天 10 分钟画图 + 推理题 2 题</div>
-                  </div>
-                </div>
-                <div class="tl-item">
-                  <div class="tl-dot"></div>
-                  <div class="tl-main">
-                    <div class="tl-title">资源推送：微课《分数乘除法》</div>
-                    <div class="tl-sub">已为你匹配适配难度与练习包</div>
-                  </div>
-                </div>
-              </div>
+              <div class="timeline" id="student-timeline"></div>
 
               <div class="actions">
                 <button class="btn btn-primary" id="btn-student-ask">立即问答</button>
