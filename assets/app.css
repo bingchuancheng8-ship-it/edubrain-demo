@@ -47,18 +47,13 @@ body{
   background:linear-gradient(135deg, rgba(99,102,241,.18), rgba(79,70,229,.08));
 }
 
-.logo-text{
-  min-width:0;
-  flex:1;
-}
-
+.logo-text{ min-width:0; flex:1; }
 .logo-title{
   font-weight:900;
   font-size:18px;
   line-height:1.15;
   white-space:normal;
 }
-
 .logo-sub{
   margin-top:2px;
   font-size:12px;
@@ -160,12 +155,7 @@ body{
   box-shadow:0 0 0 4px rgba(16,185,129,.15);
 }
 
-.view-wrap{
-  flex:1;
-  position:relative;
-  overflow:hidden;
-}
-
+.view-wrap{ flex:1; position:relative; overflow:hidden; }
 .view{
   position:absolute;
   inset:0;
@@ -280,11 +270,7 @@ body{
 }
 
 /* Teacher */
-.teacher-toolbar{
-  display:flex;
-  gap:12px;
-  margin-bottom:14px;
-}
+.teacher-toolbar{ display:flex; gap:12px; margin-bottom:14px; }
 
 .teacher-layout{
   display:grid;
@@ -340,10 +326,7 @@ body{
 }
 
 .work-panel{ display:flex; flex-direction:column; }
-.work-area{
-  padding:16px;
-  min-height:280px;
-}
+.work-area{ padding:16px; min-height:280px; }
 .work-placeholder{
   height:240px;
   border:2px dashed #e2e8f0;
@@ -380,7 +363,7 @@ body{
 .insight-grid{
   padding:0 16px 16px;
   display:grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
+  grid-template-columns: 1.35fr 1fr 1fr;
   gap:12px;
 }
 .insight-card{
@@ -405,11 +388,7 @@ body{
 .trend-point{ cursor:pointer; }
 .trend-point.active{ filter:drop-shadow(0 6px 10px rgba(79,70,229,.25)); }
 
-.layers{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
+.layers{ display:flex; flex-direction:column; gap:10px; }
 .layer-item{
   border:1px solid #eef2ff;
   border-radius:16px;
@@ -434,11 +413,120 @@ body{
   background:linear-gradient(90deg,#6366f1,#4f46e5);
 }
 
-.anomaly-list{
+/* roster */
+.mini-divider{
+  height:1px;
+  background:#f1f5f9;
+  margin:12px 0;
+}
+.roster-hd{
   display:flex;
-  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
   gap:10px;
 }
+.roster-title{ font-weight:1100; }
+.roster-search{ margin-top:10px; }
+.roster-search input{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 12px;
+  outline:none;
+  font-weight:800;
+}
+.roster-search input:focus{
+  border-color:rgba(79,70,229,.55);
+  box-shadow:0 0 0 4px rgba(79,70,229,.12);
+}
+
+.roster-list{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:220px;
+  overflow:auto;
+  padding-right:4px;
+}
+
+.roster-item{
+  border:1px solid #f1f5f9;
+  border-radius:16px;
+  padding:10px;
+  cursor:pointer;
+  transition:.14s ease;
+  background:#fff;
+}
+.roster-item:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 20px rgba(15,23,42,.06);
+}
+.roster-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.roster-name{
+  font-weight:1100;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.roster-meta{
+  color:var(--sub);
+  font-weight:900;
+  font-size:12px;
+}
+.group-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:1000;
+  border:1px solid rgba(79,70,229,.18);
+  background:#eef2ff;
+  color:#4338ca;
+}
+.hl{
+  outline:3px solid rgba(245,158,11,.35);
+  background:rgba(245,158,11,.06);
+}
+
+/* anomaly */
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:10px 0 12px;
+}
+.chip{
+  border-radius:999px;
+  padding:6px 10px;
+  font-weight:1000;
+  font-size:12px;
+  border:1px solid rgba(79,70,229,.14);
+  background:#fff;
+  color:#334155;
+  cursor:pointer;
+  transition:.14s ease;
+}
+.chip:hover{ transform:translateY(-1px); }
+.chip.active{
+  background:#eef2ff;
+  color:#4338ca;
+  border-color:rgba(79,70,229,.28);
+}
+.chip-ghost{
+  background:#fff;
+  border:1px solid var(--border);
+  color:var(--sub);
+}
+
+.anomaly-list{ display:flex; flex-direction:column; gap:10px; }
 .anomaly-item{
   border:1px solid #f1f5f9;
   border-radius:16px;
@@ -447,7 +535,7 @@ body{
   transition:.14s ease;
 }
 .anomaly-item:hover{ transform:translateY(-1px); box-shadow:0 10px 20px rgba(15,23,42,.06); }
-.an-row{ display:flex; justify-content:space-between; align-items:center; }
+.an-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
 .an-title{ font-weight:1100; }
 .an-tag{
   font-size:12px;
