@@ -1,7 +1,10 @@
 /* =========================================================
-   AI EduBrain Demo v0.9.2 (Role-based)
-   - 角色隔离：教师/学生进入仅展示对应板块
-   - 教师异常钻取：在弹窗内查看学生档案（不跳学生端）
+   AI EduBrain Demo v0.9.2 (Role-based | 3 roles | 3 cards each)
+   - 角色隔离：教师 / 学生 / 教育管理者
+   - 首页每端 3 张卡：视觉协调
+   - 教师端趋势-分层-异常联动钻取：弹窗内查看学生档案（不跳学生端）
+   - 学生端：成长档案 / 即时答疑 / 错题巩固
+   - 管理端：治理总览 / 风险预警 / 行为流督导（弹窗说明 + 驾驶舱背景）
    ========================================================= */
 
 (function () {
@@ -13,16 +16,20 @@
     role: null, // 'teacher' | 'student' | 'admin'
     view: "home",
 
-    teacherMode: "prep", // prep | mark | ana
+    // teacher
+    teacherMode: "ana", // prep | mark | ana
     trendIndex: 6, // 0..6
     tierFocus: null, // 'A' | 'B' | 'C' | null
     anomalyFilter: "all", // all | missing | error | time
     isScanning: false,
-    feedTimer: null,
 
     // student
     studentTab: "growth", // growth | qa
     currentStudentId: "S-01",
+
+    // gov
+    govMode: "overview", // overview | risk | feed
+    feedTimer: null,
   };
 
   const Trend = {
@@ -65,7 +72,7 @@
       marked,
       totalWork: 32,
       tiers,
-      anomalies,
+      anomalies: Array.isArray(anomalies) ? [...anomalies] : [],
     };
   }
 
@@ -96,7 +103,7 @@
       archive: [
         { date: "第3周", title: "入学学段适配诊断", desc: "知识掌握度 62%，重点薄弱：分数除法与应用题建模。" },
         { date: "第4周", title: "能力对标与差距明确", desc: "对标七年级标准：建模/计算需提升，阅读理解达标。" },
-        { date: "第5周", title: "周度学情复盘", desc: "错题集中在分数÷分数，建议优先补足基础计算。"},
+        { date: "第5周", title: "周度学情复盘", desc: "错题集中在分数÷分数，建议优先补足基础计算。" },
       ],
       wrongbook: [
         { topic: "分数除法", count: 5, hint: "关键：乘以倒数；先化简再计算" },
@@ -225,7 +232,6 @@
   }
 
   function roleAllowedViews(role) {
-    // 你要求：不同身份仅展示对应板块
     if (role === "teacher") return ["home", "teacher"];
     if (role === "student") return ["home", "student"];
     if (role === "admin") return ["home", "gov"];
@@ -245,24 +251,38 @@
     if (navStudent) navStudent.style.display = allowed.includes("student") ? "flex" : "none";
     if (navGov) navGov.style.display = allowed.includes("gov") ? "flex" : "none";
 
-    // 首页卡片按角色隐藏（增强“只看到自己板块”的一致性）
+    // 首页卡片按角色隐藏：每端 3 张
     const cPrep = $("#home-card-prep");
     const cMark = $("#home-card-mark");
+    const cAna = $("#home-card-ana");
+
     const cGrowth = $("#home-card-growth");
-    const cGov = $("#home-card-gov");
+    const cQA = $("#home-card-qa");
+    const cWrong = $("#home-card-wrong");
+
+    const cGovOverview = $("#home-card-gov-overview");
+    const cGovRisk = $("#home-card-gov-risk");
+    const cGovFeed = $("#home-card-gov-feed");
 
     if (cPrep) cPrep.style.display = role === "teacher" ? "block" : "none";
     if (cMark) cMark.style.display = role === "teacher" ? "block" : "none";
+    if (cAna) cAna.style.display = role === "teacher" ? "block" : "none";
+
     if (cGrowth) cGrowth.style.display = role === "student" ? "block" : "none";
-    if (cGov) cGov.style.display = role === "admin" ? "block" : "none";
+    if (cQA) cQA.style.display = role === "student" ? "block" : "none";
+    if (cWrong) cWrong.style.display = role === "student" ? "block" : "none";
+
+    if (cGovOverview) cGovOverview.style.display = role === "admin" ? "block" : "none";
+    if (cGovRisk) cGovRisk.style.display = role === "admin" ? "block" : "none";
+    if (cGovFeed) cGovFeed.style.display = role === "admin" ? "block" : "none";
 
     // 首页提示
     const tip = $("#home-role-tip");
     if (tip) {
       tip.style.display = "block";
       if (role === "teacher") tip.innerHTML = `当前身份：<b>教师</b>。你将仅看到教师相关入口（备课/批改/学情联动）。`;
-      else if (role === "student") tip.innerHTML = `当前身份：<b>学生</b>。你将仅看到学生相关入口（成长档案/即时答疑）。`
-      else if (role === "admin") tip.innerHTML = `当前身份：<b>教育管理者</b>。你将仅看到管理相关入口（治理驾驶舱/区县态势/风险预警）。`;
+      else if (role === "student") tip.innerHTML = `当前身份：<b>学生</b>。你将仅看到学生相关入口（成长档案/即时答疑/错题巩固）。`;
+      else if (role === "admin") tip.innerHTML = `当前身份：<b>教育管理者</b>。你将仅看到管理相关入口（治理总览/风险预警/行为流督导）。`;
       else tip.style.display = "none";
     }
 
@@ -279,18 +299,16 @@
       if (avatar) avatar.textContent = st.name.slice(0, 1);
       if (name) name.textContent = st.name;
       if (sub) sub.textContent = `${st.grade} · 学生`;
-
     } else if (role === "admin") {
       if (avatar) avatar.textContent = "教";
       if (name) name.textContent = "教育管理者";
       if (sub) sub.textContent = "区县教育局 · 管理端";
-
     }
   }
 
   function setRole(role) {
     App.role = role;
-    localStorage.setItem("edubrain_role", role);
+    try { localStorage.setItem("edubrain_role", role); } catch (e) {}
 
     applyRoleUI();
     hideRoleGate();
@@ -311,7 +329,6 @@
       return;
     }
 
-    // admin / 教育管理者
     if (role === "admin") {
       switchView("gov", document.querySelector('[data-view="gov"]'));
       showToast("已以教育管理者身份进入");
@@ -320,18 +337,21 @@
   }
 
   function resetRole() {
-    try { localStorage.removeItem("edubrain_role"); } catch(e) {}
-    // 简单粗暴：刷新页面，让选择身份弹窗重新出现
+    try { localStorage.removeItem("edubrain_role"); } catch (e) {}
     location.reload();
   }
 
-function ensureRoleReady() {
-    const saved = localStorage.getItem("edubrain_role");
+  function ensureRoleReady() {
+    const saved = (() => {
+      try { return localStorage.getItem("edubrain_role"); } catch (e) { return null; }
+    })();
+
     if (saved === "teacher" || saved === "student" || saved === "admin") {
       App.role = saved;
       applyRoleUI();
       hideRoleGate();
-      // 如果用户刷新页面，回到角色默认页更自然
+
+      // 刷新后回到角色默认页
       if (saved === "teacher") {
         switchView("teacher", document.querySelector('[data-view="teacher"]'));
         setTeacherMode("ana");
@@ -344,6 +364,9 @@ function ensureRoleReady() {
       }
       return;
     }
+
+    // 未选择过身份：默认展示首页 + 弹窗引导
+    App.view = "home";
     showRoleGate();
   }
 
@@ -359,8 +382,10 @@ function ensureRoleReady() {
     // 角色隔离：不允许切入非本角色模块
     if (!isViewAllowed(id)) {
       showToast("当前身份无权访问该模块");
-      // 回落到本角色默认页
-      const fallback = App.role === "student" ? "student" : "teacher";
+      const fallback =
+        App.role === "student" ? "student" :
+        App.role === "admin" ? "gov" :
+        App.role === "teacher" ? "teacher" : "home";
       id = fallback;
     }
 
@@ -370,7 +395,6 @@ function ensureRoleReady() {
     $$(".nav-item").forEach((el) => el.classList.remove("active"));
     if (navEl && navEl.style.display !== "none") navEl.classList.add("active");
     else {
-      // 如果 navEl 被隐藏，手动激活当前页对应 nav
       const curNav = document.querySelector(`[data-view="${id}"]`);
       if (curNav) curNav.classList.add("active");
     }
@@ -384,13 +408,14 @@ function ensureRoleReady() {
     const titles = { home: "首页入口", teacher: "教师工作台", student: "学习伴侣", gov: "治理驾驶舱" };
     setText("#page-title", titles[id] || "工作区");
 
-    // gov behavior（当前 demo 隐藏，不启用）
+    // gov behavior
+    const topHeader = $("#top-header");
     if (id === "gov") {
-      $("#top-header").style.display = "none";
+      if (topHeader) topHeader.style.display = "none";
       initMap();
       startFeed();
     } else {
-      $("#top-header").style.display = "flex";
+      if (topHeader) topHeader.style.display = "flex";
       stopFeed();
       clearMap();
     }
@@ -400,6 +425,83 @@ function ensureRoleReady() {
 
     // student init
     if (id === "student") ensureStudentMounted();
+  }
+
+  /** --------------------------
+   *  Home Scenario
+   *  -------------------------- */
+  function startScenario(type) {
+    // 首页入口：按角色强制路由
+    if (App.role === "admin") {
+      enterGov("overview");
+      return;
+    }
+
+    if (App.role === "student") {
+      if (type === "qa") return enterStudent("qa");
+      if (type === "wrong") return enterStudent("qa", "wrongbook");
+      return enterStudent("growth");
+    }
+
+    // teacher
+    switchView("teacher", document.querySelector('[data-view="teacher"]'));
+
+    if (type === "prep") {
+      setTeacherMode("prep");
+      setTimeout(() => {
+        const input = $("#teacher-input");
+        if (input) input.value = "生成分数应用题教案并补齐薄弱点强化环节";
+        triggerMsg();
+      }, 220);
+      return;
+    }
+
+    if (type === "mark") {
+      setTeacherMode("mark");
+      addMsg("ai", "已进入批改模式：点击右侧模拟扫描，将生成异常并联动到分析区。");
+      return;
+    }
+
+    if (type === "ana") {
+      setTeacherMode("ana");
+      addMsg("ai", "已打开联动分析：点击趋势点位、分层卡片、异常列表可进行联动钻取。");
+      renderTeacherLinkedArea();
+      return;
+    }
+
+    setTeacherMode("ana");
+  }
+
+  function startScenarioFromHome() {
+    const v = ($("#home-input")?.value || "").trim();
+
+    // 未选身份时：先弹出身份选择
+    if (!App.role) {
+      showRoleGate();
+      return;
+    }
+
+    // admin
+    if (App.role === "admin") {
+      if (v.includes("风险") || v.includes("预警")) return enterGov("risk");
+      if (v.includes("行为") || v.includes("督导") || v.includes("流")) return enterGov("feed");
+      return enterGov("overview");
+    }
+
+    // student
+    if (App.role === "student") {
+      if (v.includes("答疑") || v.includes("提问")) return enterStudent("qa");
+      if (v.includes("错题") || v.includes("巩固")) return enterStudent("qa", "wrongbook");
+      return enterStudent("growth");
+    }
+
+    // teacher
+    if (!v) return startScenario("prep");
+    if (v.includes("批改") || v.includes("作业")) return startScenario("mark");
+    if (v.includes("趋势") || v.includes("分层") || v.includes("异常") || v.includes("分析")) return startScenario("ana");
+    if (v.includes("备课") || v.includes("教案")) return startScenario("prep");
+
+    return startScenario("ana");
   }
 
   /** --------------------------
@@ -416,7 +518,7 @@ function ensureRoleReady() {
     if (btnPrep && btnMark && btnAna) {
       btnPrep.className = "btn " + (mode === "prep" ? "btn-primary" : "btn-ghost");
       btnMark.className = "btn " + (mode === "mark" ? "btn-primary" : "btn-ghost");
-      btnAna.className = "btn " + (mode === "ana" ? "btn-primary" : "btn-ghost");
+      btnAna.className  = "btn " + (mode === "ana"  ? "btn-primary" : "btn-ghost");
     }
 
     // toggle views
@@ -429,90 +531,12 @@ function ensureRoleReady() {
     if (active) active.classList.add("active");
 
     if (mode === "mark") resetOCR();
-    if (mode === "prep") renderLessonCard();
+    if (mode === "prep") renderLessonCard(false);
     if (mode === "ana") renderTeacherLinkedArea();
   }
 
   /** --------------------------
-   *  Home Scenario
-   *  -------------------------- */
-  function startScenario(type) {
-    // 角色隔离：老师只去教师，学生只去学生，管理者只去治理
-    if (App.role === "admin") {
-      switchView("gov", document.querySelector('[data-view="gov"]'));
-      return;
-    }
-    if (App.role === "student") {
-      switchView("student", document.querySelector('[data-view="student"]'));
-      setStudentTab("growth");
-      return;
-    }
-
-    switchView("teacher", document.querySelector('[data-view="teacher"]'));
-    if (type === "prep") {
-      setTeacherMode("prep");
-      setTimeout(() => {
-        $("#teacher-input").value = "生成分数应用题教案并补齐薄弱点强化环节";
-        triggerMsg();
-      }, 250);
-    } else if (type === "mark") {
-      setTeacherMode("mark");
-      addMsg("ai", "已进入批改模式：点击右侧模拟扫描，将生成异常并联动到分析区。");
-    } else {
-      setTeacherMode("prep");
-    }
-  }
-
-  function startScenarioFromHome() {
-    const v = ($("#home-input")?.value || "").trim();
-    if (!v) {
-      if (App.role === "admin") {
-        switchView("gov", document.querySelector('[data-view="gov"]'));
-        return;
-      }
-      if (App.role === "student") {
-        switchView("student", document.querySelector('[data-view="student"]'));
-        setStudentTab("growth");
-        return;
-      }
-      return startScenario("prep");
-    }
-
-    if (App.role === "teacher") {
-      if (v.includes("批改") || v.includes("作业")) return startScenario("mark");
-      if (v.includes("趋势") || v.includes("分层") || v.includes("异常") || v.includes("分析")) {
-        switchView("teacher", document.querySelector('[data-view="teacher"]'));
-        setTeacherMode("ana");
-        addMsg("ai", "已打开联动分析：点击趋势点位、分层卡片、异常列表可进行联动钻取。");
-        return;
-      }
-      return startScenario("prep");
-    }
-
-
-    if (App.role === "admin") {
-      // 管理者默认进入治理驾驶舱
-      switchView("gov", document.querySelector('[data-view="gov"]'));
-      showToast("已进入治理驾驶舱");
-      return;
-    }
-
-    // admin role
-    if (App.role === "admin") {
-      switchView("gov", document.querySelector('[data-view="gov"]'));
-      showToast("已进入治理驾驶舱");
-      return;
-    }
-
-    // student role
-    switchView("student", document.querySelector('[data-view="student"]'));
-    if (v.includes("答疑") || v.includes("提问")) setStudentTab("qa");
-    else setStudentTab("growth");
-    showToast("已进入学生模块");
-  }
-
-  /** --------------------------
-   *  Chat
+   *  Chat (Teacher)
    *  -------------------------- */
   function addMsg(role, text) {
     const box = $("#chat-box");
@@ -544,6 +568,12 @@ function ensureRoleReady() {
         addMsg("ai", "已生成《分数应用题》教学设计（示例），并根据班级薄弱点插入强化环节。");
         setTeacherMode("prep");
         renderLessonCard(true);
+        return;
+      }
+
+      if (q.includes("批改") || q.includes("作业")) {
+        addMsg("ai", "已进入作业批改模式。点击右侧模拟扫描（OCR）触发异常并联动到分析区。");
+        setTeacherMode("mark");
         return;
       }
 
@@ -807,12 +837,8 @@ function ensureRoleReady() {
 
     let items = [...day.anomalies];
 
-    if (App.anomalyFilter !== "all") {
-      items = items.filter((x) => x.type === App.anomalyFilter);
-    }
-    if (App.tierFocus) {
-      items = items.filter((x) => x.tier === App.tierFocus);
-    }
+    if (App.anomalyFilter !== "all") items = items.filter((x) => x.type === App.anomalyFilter);
+    if (App.tierFocus) items = items.filter((x) => x.tier === App.tierFocus);
 
     if (items.length === 0) {
       const empty = document.createElement("div");
@@ -1029,9 +1055,7 @@ function ensureRoleReady() {
 
     // gap list
     const gap = $("#gap-list");
-    if (gap) {
-      gap.innerHTML = st.gaps.map((x) => `<li>${x}</li>`).join("");
-    }
+    if (gap) gap.innerHTML = st.gaps.map((x) => `<li>${x}</li>`).join("");
 
     // weekly KPIs
     const m = st.weekly.mastery[st.weekly.mastery.length - 1];
@@ -1293,16 +1317,18 @@ function ensureRoleReady() {
     openModal();
     setText("#modal-title", `档案查询 · ${st.name}`);
     const body = $("#modal-body");
-    body.innerHTML = `
-      <div style="font-weight:1000;margin-bottom:8px;">本学期能力提升情况（示例）</div>
-      <div style="color:#334155;margin-bottom:10px;">
-        你在「学习习惯」与「几何推理」提升明显；「建模」仍是下一阶段重点。
-      </div>
-      <div style="padding:12px;border-radius:16px;background:#f8fafc;border:1px dashed rgba(79,70,229,0.18);">
-        建议路径：<b>基础计算 → 建模模板 → 迁移变式</b><br/>
-        每周目标：错题 ≤ 6，道道订正并能复述关键步骤。
-      </div>
-    `;
+    if (body) {
+      body.innerHTML = `
+        <div style="font-weight:1000;margin-bottom:8px;">本学期能力提升情况（示例）</div>
+        <div style="color:#334155;margin-bottom:10px;">
+          你在「学习习惯」与「几何推理」提升明显；「建模」仍是下一阶段重点。
+        </div>
+        <div style="padding:12px;border-radius:16px;background:#f8fafc;border:1px dashed rgba(79,70,229,0.18);">
+          建议路径：<b>基础计算 → 建模模板 → 迁移变式</b><br/>
+          每周目标：错题 ≤ 6，道道订正并能复述关键步骤。
+        </div>
+      `;
+    }
   }
 
   /** --------------------------
@@ -1474,7 +1500,127 @@ function ensureRoleReady() {
   }
 
   /** --------------------------
-   *  Gov (demo 不开放)
+   *  Student / Gov Entry from Home Cards
+   *  -------------------------- */
+  function enterStudent(tab = "growth", scrollToId = "") {
+    if (App.role !== "student") {
+      setRole("student");
+      setTimeout(() => {
+        setStudentTab(tab);
+        ensureStudentMounted();
+        if (scrollToId) {
+          document.getElementById(scrollToId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 90);
+      return;
+    }
+
+    switchView("student", document.querySelector('[data-view="student"]'));
+    setStudentTab(tab);
+    ensureStudentMounted();
+    if (scrollToId) {
+      document.getElementById(scrollToId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function enterGov(mode = "overview") {
+    if (App.role !== "admin") {
+      setRole("admin");
+      setTimeout(() => enterGov(mode), 120);
+      return;
+    }
+
+    App.govMode = mode;
+    switchView("gov", document.querySelector('[data-view="gov"]'));
+
+    openModal();
+
+    if (mode === "overview") {
+      setText("#modal-title", "治理总览 · 区县态势（示例）");
+      const body = $("#modal-body");
+      if (body) {
+        body.innerHTML = `
+          <div style="color:#334155;margin-bottom:10px;">
+            汇总全区关键态势：活跃、作业量、掌握度、异常分布，用于领导总览与督导。
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="border:1px solid #e7ecf5;border-radius:14px;padding:12px;">
+              <div style="font-weight:1000;">活跃教师</div>
+              <div style="font-size:22px;font-weight:1100;margin-top:6px;">1,284</div>
+              <div style="color:#64748b;font-size:12px;margin-top:4px;">周环比 +12%</div>
+            </div>
+            <div style="border:1px solid #e7ecf5;border-radius:14px;padding:12px;">
+              <div style="font-weight:1000;">风险预警</div>
+              <div style="font-size:22px;font-weight:1100;margin-top:6px;">37</div>
+              <div style="color:#64748b;font-size:12px;margin-top:4px;">需关注学校 8 所</div>
+            </div>
+            <div style="border:1px solid #e7ecf5;border-radius:14px;padding:12px;">
+              <div style="font-weight:1000;">平均掌握度</div>
+              <div style="font-size:22px;font-weight:1100;margin-top:6px;">73%</div>
+              <div style="color:#64748b;font-size:12px;margin-top:4px;">7日趋势上升</div>
+            </div>
+            <div style="border:1px solid #e7ecf5;border-radius:14px;padding:12px;">
+              <div style="font-weight:1000;">作业覆盖</div>
+              <div style="font-size:22px;font-weight:1100;margin-top:6px;">92%</div>
+              <div style="color:#64748b;font-size:12px;margin-top:4px;">班级提交稳定</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:12px;border-radius:14px;background:#f8fafc;border:1px dashed rgba(79,70,229,0.18);">
+            <b>可下钻：</b>学校 → 年级 → 班级 → 异常类型（缺交/错误率/作业量/薄弱点集中）
+          </div>
+        `;
+      }
+      showToast("已进入治理总览");
+      return;
+    }
+
+    if (mode === "risk") {
+      setText("#modal-title", "风险预警 · 异常聚合（示例）");
+      const body = $("#modal-body");
+      if (body) {
+        body.innerHTML = `
+          <div style="color:#334155;margin-bottom:10px;">
+            将“缺交、错误率、作业量、薄弱点集中”等预警聚合，支持一键督导与处置闭环。
+          </div>
+          <ul style="margin:0;padding-left:18px;color:#334155;line-height:1.6;">
+            <li><b>[实验小学]</b> 作业缺交连续 2 天上升，建议触发家校协同提醒</li>
+            <li><b>[第一中学]</b> 七年级数学“分数应用题”错误率偏高，建议教研专题</li>
+            <li><b>[育才学校]</b> 作业量异常偏高，存在负担风险，建议适度调控</li>
+            <li><b>[高新一小]</b> 课堂互动覆盖率低于阈值，建议重点督导</li>
+          </ul>
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="showToast('已模拟下发：督导任务（演示）')">下发督导任务</button>
+            <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟生成：风险周报（演示）')">生成风险周报</button>
+          </div>
+        `;
+      }
+      showToast("已进入风险预警");
+      return;
+    }
+
+    // feed
+    setText("#modal-title", "行为流督导 · 实时动态（示例）");
+    const body = $("#modal-body");
+    if (body) {
+      body.innerHTML = `
+        <div style="color:#334155;margin-bottom:10px;">
+          汇聚教师侧关键行为（备课/组卷/批改/查看档案/下发补救）形成实时流，支撑过程督导。
+        </div>
+        <div style="padding:12px;border-radius:14px;border:1px solid #e7ecf5;">
+          <div style="font-weight:1000;margin-bottom:8px;">示例关注点</div>
+          <ul style="margin:0;padding-left:18px;color:#334155;line-height:1.6;">
+            <li>重点学校是否按计划完成教案生成与作业分层</li>
+            <li>异常出现后是否触发补救任务与家校提醒</li>
+            <li>学生档案查看频次是否与教学调整闭环匹配</li>
+          </ul>
+        </div>
+      `;
+    }
+    showToast("已进入行为流督导");
+  }
+
+  /** --------------------------
+   *  Gov Background (demo)
    *  -------------------------- */
   function initMap() {
     const grid = $("#map-grid");
@@ -1529,7 +1675,6 @@ function ensureRoleReady() {
    *  -------------------------- */
   window.setRole = setRole;
   window.resetRole = resetRole;
-  window.resetRole = resetRole;
 
   window.switchView = switchView;
   window.setTeacherMode = setTeacherMode;
@@ -1557,6 +1702,9 @@ function ensureRoleReady() {
   window.openStudentProfile = openStudentProfile;
   window.showToast = showToast;
 
+  window.enterStudent = enterStudent;
+  window.enterGov = enterGov;
+
   /** --------------------------
    *  Boot
    *  -------------------------- */
@@ -1564,10 +1712,10 @@ function ensureRoleReady() {
     const ver = $("#app-version");
     if (ver) ver.textContent = App.version;
 
-    // 先初始化 role
+    // 初始化 role
     ensureRoleReady();
 
-    // 如果当前页有趋势图，补一次渲染
+    // 初始补渲染
     if ($("#trend-canvas") && App.role === "teacher") renderTeacherLinkedArea();
     if ($("#radar-canvas") && App.role === "student") ensureStudentMounted();
   }
