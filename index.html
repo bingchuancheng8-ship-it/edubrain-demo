@@ -1,565 +1,377 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AI EduBrain | K12 教育智能体演示（PC）</title>
-  <link rel="stylesheet" href="./assets/app.css" />
-</head>
-<body>
-  <div class="app">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI EduBrain | K12 全场景教育智能体</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
 
-    <!-- Sidebar (PC only) -->
-    <aside id="sidebar" class="sidebar">
-      <div class="sidebar-head">
-        <div class="brand">
-          <div class="brand-logo" aria-hidden="true">🤖</div>
-          <div class="brand-meta">
-            <div class="brand-title">AI EduBrain</div>
-            <div class="brand-sub">K12 教育智能体演示</div>
+  <body>
+    <div id="toast" class="toast" style="display: none">提示</div>
+
+    <div id="role-gate" class="role-gate" style="display: none">
+      <div class="role-card">
+        <div class="role-head">
+          <div class="role-title">选择身份进入工作区</div>
+          <div class="role-sub">
+            系统将根据身份构建专属工作台，未选择时仅可见公共服务。
           </div>
         </div>
-        <div class="brand-badges">
-          <span id="versionPill" class="pill pill-primary">v1.4.0-pc</span>
+
+        <div class="role-grid">
+          <div class="role-item" onclick="setRole('teacher')">
+            <div class="role-tag">学科教学</div>
+            <div class="role-icon">👩‍🏫</div>
+            <div class="role-name">学科教师</div>
+            <div class="role-desc">智能备课 / 作业批改 / 精准教研 / 职称成长</div>
+          </div>
+
+          <div class="role-item" onclick="setRole('homeroom')">
+            <div class="role-tag">班级管理</div>
+            <div class="role-icon">📋</div>
+            <div class="role-name">班主任</div>
+            <div class="role-desc">家校通知 / 评语生成 / 班级考勤 / 德育管理</div>
+          </div>
+
+          <div class="role-item" onclick="setRole('student')">
+            <div class="role-tag">自主学习</div>
+            <div class="role-icon">🧑‍🎓</div>
+            <div class="role-name">学生</div>
+            <div class="role-desc">个性化学习 / 错题举一反三 / 兴趣探索</div>
+          </div>
+
+          <div class="role-item" onclick="setRole('parent')">
+            <div class="role-tag">家校协同</div>
+            <div class="role-icon">👪</div>
+            <div class="role-name">家长</div>
+            <div class="role-desc">成长追踪 / 事务办理 / 亲子辅导支持</div>
+          </div>
+
+          <div class="role-item" onclick="setRole('admin')">
+            <div class="role-tag">区域治理</div>
+            <div class="role-icon">🏛️</div>
+            <div class="role-name">教育管理者</div>
+            <div class="role-desc">治理驾驶舱 / 资源统筹 / 风险预警</div>
+          </div>
+        </div>
+
+        <div class="role-foot">
+          <button class="btn btn-ghost" onclick="hideRoleGate()">暂不选择（仅浏览门户）</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="logo-area">
+        <div class="logo-mark">
+          <img src="/assets/digital-human.svg" alt="AI" style="width: 28px; height: 28px" />
+        </div>
+        <div class="logo-text">
+          <div class="logo-title">AI EduBrain</div>
+          <div class="logo-sub">K12 全场景智能体</div>
+        </div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      </div>
+
+      <div class="nav-menu">
+        <div class="nav-group-label">公共服务</div>
+        
+        <div class="nav-item active" id="nav-portal" data-view="portal" onclick="switchView('portal', this)">
+          <div class="nav-icon">🏫</div>
+          AI智能门户
+        </div>
+
+        <div class="nav-item" id="nav-agents" data-view="agents" onclick="switchView('agents', this)">
+          <div class="nav-icon">🤖</div>
+          智能体中心
+        </div>
+
+        <div id="workspace-group" style="display:none">
+          <div class="nav-group-label" style="margin-top:10px;">专属工作区</div>
+
+          <div class="nav-item" id="nav-teacher" data-view="teacher" onclick="switchView('teacher', this)" style="display:none">
+            <div class="nav-icon">👩‍🏫</div>
+            教师工作台
+          </div>
+
+          <div class="nav-item" id="nav-homeroom" data-view="homeroom" onclick="switchView('homeroom', this)" style="display:none">
+            <div class="nav-icon">📋</div>
+            班主任工作台
+          </div>
+
+          <div class="nav-item" id="nav-student" data-view="student" onclick="switchView('student', this)" style="display:none">
+            <div class="nav-icon">🧑‍🎓</div>
+            学生学习中心
+          </div>
+
+          <div class="nav-item" id="nav-parent" data-view="parent" onclick="switchView('parent', this)" style="display:none">
+            <div class="nav-icon">👪</div>
+            家长家校协同
+          </div>
+
+          <div class="nav-item" id="nav-gov" data-view="gov" onclick="switchView('gov', this)" style="display:none">
+            <div class="nav-icon">🧭</div>
+            治理驾驶舱
+          </div>
+          <div class="nav-item" id="nav-kb" data-view="kb" onclick="switchView('kb', this)" style="display:none">
+            <div class="nav-icon">📚</div>
+            知识库管理
+          </div>
         </div>
       </div>
 
-      <!-- Primary nav (always visible) -->
-      <nav class="nav">
-        <div class="nav-section-title">AI智能门户</div>
-        <button class="nav-item" data-view="portal">
-          <span class="nav-ico">🏫</span><span class="nav-text">AI智能门户</span>
-        </button>
-        <button class="nav-item" data-view="agents">
-          <span class="nav-ico">🤖</span><span class="nav-text">智能体中心</span>
-        </button>
+      <div style="padding: 10px 14px 0;">
+         <button class="btn btn-primary" style="width:100%;font-size:13px;" onclick="showRoleGate()">
+           🔁 切换/选择身份
+         </button>
+      </div>
 
-        <div class="nav-divider"></div>
-
-        <!-- Role gate -->
-        <div class="role-box">
-          <div class="role-row">
-            <div class="role-label">当前身份</div>
-            <div id="rolePill" class="pill pill-muted">未选择</div>
-          </div>
-          <div class="role-actions">
-            <button id="btnPickRole" class="btn btn-ghost">选择身份</button>
-            <button id="btnSwitchRole" class="btn btn-ghost">切换身份</button>
-          </div>
-        </div>
-
-        <!-- Secondary nav (only after role selected) -->
-        <div id="roleNavWrap" class="role-nav-wrap hidden">
-          <div class="nav-section-title">工作区</div>
-          <div id="roleNav"></div>
-        </div>
-      </nav>
-
-      <!-- Footer user card -->
-      <div class="sidebar-foot">
-        <div class="user-card">
-          <div class="user-avatar" aria-hidden="true">李</div>
-          <div class="user-meta">
-            <div class="user-name" id="userName">访问者</div>
-            <div class="user-desc" id="userDesc">请选择身份进入演示</div>
-          </div>
+      <div class="user-profile">
+        <div class="avatar" id="user-avatar">访</div>
+        <div class="user-meta">
+          <div class="user-name" id="user-name">访客模式</div>
+          <div class="user-sub" id="user-sub">未登录</div>
         </div>
       </div>
     </aside>
 
-    <!-- Main -->
-    <main class="main">
-      <header class="topbar">
-        <div class="topbar-left">
-          <button id="btnCollapse" class="icon-btn" title="收起/展开侧边栏">☰</button>
-          <div class="crumb">
-            <span id="crumbMain">工作区</span>
-            <span class="crumb-sep">/</span>
-            <span id="crumbSub">AI智能门户</span>
-          </div>
+    <section class="main-content">
+      <header class="top-header" id="top-header">
+        <div class="breadcrumb">
+          AI EduBrain / <span id="page-title">AI智能门户</span>
         </div>
-        <div class="topbar-right">
-          <span class="pill pill-success">● 系统正常</span>
+        <div class="sys-status">
+          <span class="dot"></span>
+          <span>系统正常</span>
         </div>
       </header>
 
-      <section class="content">
+      <div class="view-wrapper">
+        
+        <div class="view-container active" id="view-portal">
+           <div class="portal-hero">
+             <div class="portal-left">
+               <div class="portal-badge">统一入口 · 游客/家长/师生通用</div>
+               <h1>AI 智能门户：校园服务一站式大厅</h1>
+               <p class="portal-desc">
+                 聚合校园动态、办事指南与知识库问答。无论您是否登录，数字人助手随时待命。
+                 <br>点击下方按钮选择身份，解锁深层业务智能体。
+               </p>
+               <div class="portal-actions">
+                 <button class="btn btn-primary" onclick="showRoleGate()">进入专属工作区</button>
+                 <button class="btn btn-ghost" onclick="switchView('agents', null)">浏览智能体中心</button>
+               </div>
+               <div class="portal-card-grid">
+                  <div class="portal-card" onclick="portalGo('news')"><div class="pc-title">校园动态</div><div class="pc-sub">通知公告 · 校园新闻</div></div>
+                  <div class="portal-card" onclick="portalGo('service')"><div class="pc-title">办事指南</div><div class="pc-sub">入学报名 · 课后服务</div></div>
+                  <div class="portal-card" onclick="portalGo('homeSchool')"><div class="pc-title">家校公开</div><div class="pc-sub">食谱公示 · 收费标准</div></div>
+                </div>
+                <div class="portal-section card" id="portal-section">
+                  <div class="section-title">今日推荐</div>
+                  <div class="section-list">
+                    <div class="section-item">本周食谱公示：营养午餐搭配详情（点击查看）</div>
+                    <div class="section-item">流感高发期健康提示：请家长注意防护</div>
+                  </div>
+                </div>
+             </div>
+             <div class="portal-right">
+               <div class="dh-card card">
+                 <div class="dh-head">
+                    <div class="dh-avatar">🤖</div>
+                    <div class="dh-meta"><div class="dh-title">数字人咨询</div><div class="dh-sub">基于学校私有知识库</div></div>
+                 </div>
+                 <div class="dh-chat" id="portal-chat">
+                    <div class="dh-bubble ai">您好！我是校园智能助手。您可以问我：<br>“下周食谱是什么？”<br>“怎么报名延时服务？”</div>
+                 </div>
+                 <div class="dh-input">
+                    <input id="portal-input" placeholder="输入问题..." />
+                    <button class="btn btn-primary" onclick="portalSend()">发送</button>
+                 </div>
+               </div>
+             </div>
+           </div>
+        </div>
 
-        <!-- VIEW: Portal -->
-        <div id="view-portal" class="view active">
-          <div class="hero hero-bg">
-            <div class="hero-left">
-              <div class="hero-tag pill pill-muted">结构化服务入口 + 数字人咨询（演示）</div>
-              <h1 class="hero-title">让家校协同与校务服务“找得到、问得清、办得成”</h1>
-              <p class="hero-desc">
-                以学校私有知识库为底座，面向教师/学生/班主任/家长/教育管理者提供统一入口、智能问答与流程指引，
-                并与教学、教研与治理智能体联动。
-              </p>
+        <div class="view-container" id="view-agents">
+           <div class="agents-head"><h1>智能体中心</h1><p>全场景 AI 能力货架</p><div class="agents-tools"><input id="agents-search" class="magic-input" placeholder="搜索智能体..." oninput="renderAgents()"/><div class="agents-tags" id="agents-tags"></div></div></div>
+           <div class="agent-grid" id="agents-grid"></div>
+        </div>
 
-              <div class="hero-cta">
-                <button id="btnEnterWithRole" class="btn btn-primary">进入演示系统（选择身份）</button>
-                <button class="btn btn-secondary" data-view="agents">浏览智能体中心</button>
-              </div>
-
-              <div class="cards-row">
-                <div class="mini-card">
-                  <div class="mini-title">校园动态</div>
-                  <div class="mini-desc">通知公告 · 活动报名 · 校园要闻</div>
-                </div>
-                <div class="mini-card">
-                  <div class="mini-title">办事指南</div>
-                  <div class="mini-desc">入学报名 · 课后服务 · 校服研学</div>
-                </div>
-                <div class="mini-card">
-                  <div class="mini-title">家校沟通</div>
-                  <div class="mini-desc">班级通知 · 家长会 · 学情解读</div>
-                </div>
-              </div>
-
-              <div class="today-list card">
-                <div class="card-hd">
-                  <div class="card-title">今日推荐</div>
-                  <div class="card-sub">高频事项的结构化入口（演示）</div>
-                </div>
-                <div class="card-bd list">
-                  <button class="list-item">本周家长会：周五 19:30 线上会议（点击查看入口与注意事项）</button>
-                  <button class="list-item">课后服务选课：开放时间 09:00–18:00（点击查看操作步骤）</button>
-                  <button class="list-item">寒假研学：报名截止 1 月 28 日（点击查看行程与缴费）</button>
-                </div>
-              </div>
+        <div class="view-container" id="view-teacher">
+          <div class="teacher-toolbar">
+             <button id="btn-prep" class="btn btn-primary" onclick="setTeacherMode('prep')">📘 智能备课</button>
+             <button id="btn-mark" class="btn btn-ghost" onclick="setTeacherMode('mark')">📝 作业批改</button>
+             <button id="btn-ana" class="btn btn-ghost" onclick="setTeacherMode('ana')">📊 学情分析</button>
+             <button id="btn-research" class="btn btn-ghost" onclick="setTeacherMode('research')">🧪 教研协同</button>
+             <button id="btn-growth" class="btn btn-ghost" onclick="setTeacherMode('growth')">🏅 职称成长</button>
+          </div>
+          <div class="split-layout">
+            <div class="panel">
+               <div class="panel-title"><span>🧠 教学副驾</span></div>
+               <div class="chat-history" id="chat-box-teacher"><div class="msg ai"><div class="msg-bubble">李老师好，我是您的学科教学助手。今天准备备课还是分析学情？</div></div></div>
+               <div class="chat-input"><input id="teacher-input" placeholder="输入指令..." /><button class="btn btn-primary" onclick="triggerTeacherMsg()">发送</button></div>
             </div>
-
-            <div class="hero-right">
-              <div class="assistant card">
-                <div class="assistant-hd">
-                  <div class="assistant-title">学校数字人 · 智能咨询</div>
-                  <div class="assistant-sub">支持办事指南 / 校园动态 / 家校问题</div>
-                </div>
-                <div class="assistant-chat">
-                  <div class="chat-bubble bot">你好，我是学校智能助手。你可以问我：课后服务怎么选？入学报名要什么材料？</div>
-                </div>
-                <div class="assistant-quick">
-                  <button class="chip">课后服务怎么选？</button>
-                  <button class="chip">入学报名材料</button>
-                  <button class="chip">家长会入口</button>
-                  <button class="chip">校服订购</button>
-                </div>
-                <div class="assistant-input">
-                  <input class="input" placeholder="输入问题…（演示）" />
-                  <button class="btn btn-primary">发送</button>
-                </div>
-                <div class="assistant-foot">
-                  示例：从“家校沟通”一键跳转到班主任“通知/评语”智能体批量生成。
-                  <button class="btn btn-ghost" id="btnOpenHomeroom">打开班主任工作台</button>
-                </div>
-              </div>
+            <div class="workspace">
+               <div class="workspace-view active" id="prep-view"><div id="lesson-result"></div></div>
+               <div class="workspace-view" id="mark-view"><div class="ocr-shell" onclick="runOCR()"><div class="ocr-tip">点击模拟扫描作业</div><div class="paper-mock"><h3>作业样张</h3></div><div class="scan-laser" id="ocr-laser"></div></div></div>
+               <div class="workspace-view" id="ana-view"><div class="ana-grid" id="ana-content"></div></div>
+               <div class="workspace-view" id="research-view"><div id="research-root"></div></div>
+               <div class="workspace-view" id="growth-view"><div id="growth-root"></div></div>
             </div>
           </div>
         </div>
 
-        <!-- VIEW: Agents -->
-        <div id="view-agents" class="view">
-          <div class="page">
-            <div class="page-hd">
-              <h2 class="page-title">智能体中心</h2>
-              <div class="page-sub">按场景复用：助教 / 助育 / 助评 / 助学 / 治理 / 平台能力 / 知识库 / 合规</div>
-            </div>
+        <div class="view-container" id="view-homeroom">
+          <div class="teacher-toolbar">
+            <button class="btn btn-primary">📢 班级通知</button>
+            <button class="btn btn-ghost" onclick="showToast('已切换：评语生成')">✍️ 评语生成</button>
+            <button class="btn btn-ghost" onclick="showToast('已切换：德育考勤')">🛡️ 德育安全</button>
+          </div>
+          
+          <div class="split-layout">
+             <div class="panel">
+               <div class="panel-title"><span>🤖 班主任助理</span></div>
+               <div class="chat-history" id="chat-box-homeroom">
+                 <div class="msg ai"><div class="msg-bubble">我是班主任助理。我可以帮您起草通知、分析班级考勤或生成学生评语。</div></div>
+               </div>
+               <div class="chat-input">
+                 <input id="homeroom-input" placeholder="例：写一份防溺水安全通知..." />
+                 <button class="btn btn-primary" onclick="triggerHomeroomMsg()">发送</button>
+               </div>
+             </div>
 
-            <div class="filters">
-              <button class="chip chip-on" data-filter="all">全部</button>
-              <button class="chip" data-filter="assist-teach">助教</button>
-              <button class="chip" data-filter="assist-parent">助育</button>
-              <button class="chip" data-filter="assist-eval">助评</button>
-              <button class="chip" data-filter="assist-learn">助学</button>
-              <button class="chip" data-filter="govern">治理</button>
-              <button class="chip" data-filter="kb">知识库</button>
-              <button class="chip" data-filter="compliance">合规</button>
-            </div>
-
-            <div class="grid">
-              <div class="agent-card" data-tags="assist-teach">
-                <div class="agent-title">小学数学教学设计智能体</div>
-                <div class="agent-tag">助教</div>
-                <div class="agent-desc">按教材/课时生成教学设计，并做课标对齐与要点检查（演示）。</div>
-                <div class="agent-actions">
-                  <button class="btn btn-secondary" data-open="teacher">打开</button>
+             <div class="workspace" style="background:#fff; padding:20px; overflow:auto;">
+                <div class="ana-card kpi-card" style="margin-bottom:14px; display:flex; justify-content:space-around;">
+                   <div style="text-align:center;">
+                     <div class="kpi-title">班级人数</div><div class="kpi-value">42</div>
+                   </div>
+                   <div style="text-align:center;">
+                     <div class="kpi-title">今日出勤</div><div class="kpi-value" style="color:#10b981">42</div>
+                   </div>
+                   <div style="text-align:center;">
+                     <div class="kpi-title">待办事项</div><div class="kpi-value" style="color:#f59e0b">3</div>
+                   </div>
                 </div>
-              </div>
 
-              <div class="agent-card" data-tags="assist-eval">
-                <div class="agent-title">班主任评语智能体</div>
-                <div class="agent-tag">助评</div>
-                <div class="agent-desc">按学情与性格特征生成“先褒后提”的个性化评语（演示）。</div>
-                <div class="agent-actions">
-                  <button class="btn btn-secondary" data-open="homeroom">打开</button>
+                <div class="section-title">快捷操作</div>
+                <div class="portal-card-grid">
+                  <div class="portal-card" onclick="hrAction('notice')">
+                    <div class="pc-title">📝 生成通知</div>
+                    <div class="pc-sub">活动/放假/安全提醒</div>
+                  </div>
+                  <div class="portal-card" onclick="hrAction('comment')">
+                    <div class="pc-title">✍️ 批量评语</div>
+                    <div class="pc-sub">期末/周评/个性化</div>
+                  </div>
+                  <div class="portal-card" onclick="hrAction('talk')">
+                    <div class="pc-title">💬 谈话记录</div>
+                    <div class="pc-sub">语音转文字归档</div>
+                  </div>
                 </div>
-              </div>
 
-              <div class="agent-card" data-tags="assist-teach">
-                <div class="agent-title">高中数学教学助手</div>
-                <div class="agent-tag">工作台式</div>
-                <div class="agent-desc">模板驱动：备课/课件/资源检索，多入口低学习成本（演示）。</div>
-                <div class="agent-actions">
-                  <button class="btn btn-secondary" data-open="teacher">打开</button>
-                </div>
-              </div>
-
-              <div class="agent-card" data-tags="assist-learn">
-                <div class="agent-title">学生学习学伴</div>
-                <div class="agent-tag">助学</div>
-                <div class="agent-desc">即时答疑、错题举一反三、薄弱点专项提升（演示）。</div>
-                <div class="agent-actions">
-                  <button class="btn btn-secondary" data-open="student">打开</button>
-                </div>
-              </div>
-
-              <div class="agent-card" data-tags="govern">
-                <div class="agent-title">区域治理驾驶舱</div>
-                <div class="agent-tag">治理</div>
-                <div class="agent-desc">趋势 + 风险 + 行为流的可视化总览与下钻（演示）。</div>
-                <div class="agent-actions">
-                  <button class="btn btn-secondary" data-open="admin">打开</button>
-                </div>
-              </div>
-
-              <div class="agent-card" data-tags="kb">
-                <div class="agent-title">学校私有知识库管理</div>
-                <div class="agent-tag">知识库</div>
-                <div class="agent-desc">知识条目、审核发布、命中统计（演示）。</div>
-                <div class="agent-actions">
-                  <button class="btn btn-secondary" data-open="kb">打开</button>
-                </div>
-              </div>
-            </div>
+                <div class="section-title" style="margin-top:20px;">班级动态流</div>
+                <div class="feed-item" style="color:#334155">14:00 [S-02] 高航 家长确认了“防溺水回执”</div>
+                <div class="feed-item" style="color:#334155">10:30 [体育课] 全班出勤正常</div>
+                <div class="feed-item" style="color:#334155">08:10 [早读] 英语老师反馈课堂纪律良好</div>
+             </div>
           </div>
         </div>
 
-        <!-- VIEW: Teacher -->
-        <div id="view-teacher" class="view">
-          <div class="page">
-            <div class="page-hd">
-              <h2 class="page-title">教师工作台</h2>
-              <div class="page-sub">备课 · 批改 · 分析联动 · 教研协同 · 职称成长（演示）</div>
-            </div>
-
-            <div class="toolbar teacher-toolbar">
-              <button class="tab tab-on" data-tab="prep">📘 备课</button>
-              <button class="tab" data-tab="mark">📝 批改</button>
-              <button class="tab" data-tab="analysis">📊 分析联动</button>
-              <button class="tab" data-tab="research">🧪 教研协同</button>
-              <button class="tab" data-tab="growth">🏅 职称成长</button>
-              <div class="toolbar-hint">提示：趋势点位 / 分层卡片 / 异常列表均可联动钻取</div>
-            </div>
-
-            <div class="split">
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title">任务列表</div>
-                  <div class="card-sub">按 tab 切换展示（演示）</div>
-                </div>
-                <div class="card-bd list" id="teacherTaskList"></div>
-              </div>
-
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title" id="teacherDetailTitle">详情</div>
-                  <div class="card-sub" id="teacherDetailSub">选择左侧任务查看</div>
-                </div>
-                <div class="card-bd" id="teacherDetailBody">
-                  <div class="empty">请选择任务进行演示。</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="view-container" id="view-student">
+           <div class="student-top">
+             <div><div class="student-title">学生学习中心</div><div class="student-sub">自主学习 · 答疑 · 成长</div></div>
+             <div class="student-top-right"><div class="streak-pill">🔥 连续打卡 12 天</div></div>
+           </div>
+           <div class="student-tabs">
+             <div class="tab-btn active" id="stab-growth" onclick="setStudentTab('growth')">📈 成长档案</div>
+             <div class="tab-btn" id="stab-qa" onclick="setStudentTab('qa')">💬 AI 答疑与错题</div>
+           </div>
+           <div id="student-growth" class="student-page active"></div>
+           <div id="student-qa" class="student-page"></div>
         </div>
 
-        <!-- VIEW: Student -->
-        <div id="view-student" class="view">
-          <div class="page">
-            <div class="page-hd">
-              <h2 class="page-title">学生学习中心</h2>
-              <div class="page-sub">即时答疑 · 错题巩固 · 个性化提升（演示）</div>
-            </div>
-
-            <div class="split">
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title">学习任务</div>
-                  <div class="card-sub">智能推荐 + 自主选择</div>
-                </div>
-                <div class="card-bd list">
-                  <button class="list-item">数学：函数图像薄弱点专项（10 分钟）</button>
-                  <button class="list-item">英语：阅读理解错题举一反三（8 题）</button>
-                  <button class="list-item">语文：作文结构优化（段落训练）</button>
-                </div>
+        <div class="view-container" id="view-parent">
+           <div style="max-width:800px; margin:0 auto;">
+              <div class="parent-header card" style="padding:16px; display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+                 <div class="avatar" style="width:50px;height:50px;background:#f59e0b;">宋</div>
+                 <div>
+                   <div style="font-weight:900; font-size:16px;">宋扬（孩子）</div>
+                   <div style="font-size:12px; color:#64748b;">七年级 · 数学薄弱项需关注</div>
+                 </div>
+                 <button class="btn btn-ghost btn-sm" style="margin-left:auto">切换孩子</button>
               </div>
 
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title">AI 学伴</div>
-                  <div class="card-sub">引导式追问与讲解（演示）</div>
+              <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+                 <div class="feature-card" onclick="openParentDetail('growth')">
+                    <div class="card-emoji">📈</div>
+                    <h3>成长报告</h3>
+                    <p>查看周度学情与体质数据</p>
+                 </div>
+                 <div class="feature-card" onclick="openParentDetail('task')">
+                    <div class="card-emoji">📝</div>
+                    <h3>作业任务</h3>
+                    <p>今日作业由 3 项，已完成 2</p>
+                 </div>
+                 <div class="feature-card" onclick="openParentDetail('service')">
+                    <div class="card-emoji">🍲</div>
+                    <h3>生活服务</h3>
+                    <p>本周午餐食谱 / 延时服务</p>
+                 </div>
+                 <div class="feature-card" onclick="openParentDetail('msg')">
+                    <div class="card-emoji">🔔</div>
+                    <h3>家校通知</h3>
+                    <p>您有 1 条未读家长会通知</p>
+                 </div>
+              </div>
+              
+              <div class="dh-card card" style="margin-top:16px;">
+                <div class="dh-head">
+                  <div class="dh-avatar">🦉</div>
+                  <div class="dh-meta"><div class="dh-title">家庭教育顾问</div><div class="dh-sub">亲子沟通 / 心理辅导 / 升学建议</div></div>
                 </div>
-                <div class="card-bd">
-                  <div class="chat-bubble bot">把你卡住的步骤发我，我先帮你定位“错在第几步”。</div>
-                  <div class="chat-bubble user">我不会求这个函数的单调区间。</div>
-                  <div class="chat-bubble bot">先告诉我：你会求导吗？如果会，我们从导数符号表开始。</div>
-                  <div class="form-row">
-                    <input class="input" placeholder="输入问题…（演示）" />
-                    <button class="btn btn-primary">发送</button>
-                  </div>
+                <div class="dh-chat" id="parent-chat" style="height:180px;">
+                  <div class="dh-bubble ai">家长您好！孩子最近数学成绩波动，建议多鼓励他的计算细节。您可以问我：“如何引导孩子检查错题？”</div>
+                </div>
+                <div class="dh-input">
+                  <input id="parent-input" placeholder="输入问题..." />
+                  <button class="btn btn-primary" onclick="parentSend()">咨询</button>
                 </div>
               </div>
-            </div>
-          </div>
+           </div>
         </div>
 
-        <!-- VIEW: Homeroom -->
-        <div id="view-homeroom" class="view">
-          <div class="page">
-            <div class="page-hd">
-              <h2 class="page-title">班主任工作台</h2>
-              <div class="page-sub">通知 · 评语 · 家校沟通 · 异常预警（演示）</div>
-            </div>
-
-            <div class="split">
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title">高频工作</div>
-                  <div class="card-sub">结构化入口 + 一键生成</div>
-                </div>
-                <div class="card-bd list">
-                  <button class="list-item">班级通知：家长会提醒（模板）</button>
-                  <button class="list-item">学生评语：期末评语批量生成</button>
-                  <button class="list-item">异常预警：缺勤/作业未交提醒</button>
-                </div>
-              </div>
-
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title">评语智能体（演示）</div>
-                  <div class="card-sub">输入学情与性格特征，生成“先褒后提”评语</div>
-                </div>
-                <div class="card-bd">
-                  <textarea class="textarea" rows="7" placeholder="示例：初三 1 班李小明，期末 A+，班排第 2，上升 2 位，表达能力强，但易粗心…"></textarea>
-                  <div class="form-row">
-                    <button class="btn btn-secondary">生成示例</button>
-                    <button class="btn btn-primary">一键生成</button>
-                  </div>
-                  <div class="note">演示：输出可复制，可按学生列表批量生成。</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="view-container gov-container" id="view-gov">
+           <div class="gov-overlay"><div><h2>治理驾驶舱</h2><div style="font-size:12px;opacity:0.8">全区态势 · 风险预警</div></div></div>
+           <div class="map-stage"><div class="map-grid" id="map-grid"></div></div>
+           <div class="live-feed"><div class="feed-title">实时行为流</div><div id="feed-list"></div></div>
+        </div>
+        
+        <div class="view-container" id="view-kb">
+           <div class="kb-head"><h1>知识库管理</h1><p>全校私有知识资产沉淀</p></div>
+           <div class="kb-grid">
+             <div class="card kb-form">
+               <div class="section-title">新增条目</div>
+               <input id="kb-title" class="magic-input" placeholder="标题..." />
+               <textarea id="kb-content" class="kb-textarea" placeholder="内容..."></textarea>
+               <div class="kb-row"><button class="btn btn-primary" onclick="kbAdd()">提交</button></div>
+             </div>
+             <div class="card kb-list"><div id="kb-list"></div></div>
+           </div>
         </div>
 
-        <!-- VIEW: Parent -->
-        <div id="view-parent" class="view">
-          <div class="page">
-            <div class="page-hd">
-              <h2 class="page-title">家长家校协同</h2>
-              <div class="page-sub">通知公告 · 校务办理 · 学情解读 · 课后服务（演示）</div>
-            </div>
-
-            <div class="split">
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title">我的事项</div>
-                  <div class="card-sub">一键直达高频办事</div>
-                </div>
-                <div class="card-bd list">
-                  <button class="list-item">课后服务：查看可选课程与时间</button>
-                  <button class="list-item">家长会：进入会议与注意事项</button>
-                  <button class="list-item">学情解读：本周学习建议（摘要）</button>
-                </div>
-              </div>
-
-              <div class="panel card">
-                <div class="card-hd">
-                  <div class="card-title">家长问答助手</div>
-                  <div class="card-sub">围绕校务流程与学情解释（演示）</div>
-                </div>
-                <div class="card-bd">
-                  <div class="chat-bubble bot">你可以问：课后服务怎么选？孩子数学薄弱点怎么补？</div>
-                  <div class="form-row">
-                    <input class="input" placeholder="输入问题…（演示）" />
-                    <button class="btn btn-primary">发送</button>
-                  </div>
-                  <div class="chips">
-                    <button class="chip">课后服务怎么选</button>
-                    <button class="chip">作业没完成怎么办</button>
-                    <button class="chip">成绩波动原因</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- VIEW: Admin Dashboard -->
-        <div id="view-admin" class="view">
-          <div class="page">
-            <div class="page-hd">
-              <h2 class="page-title">治理驾驶舱</h2>
-              <div class="page-sub">区域趋势 · 风险预警 · 实时行为流（清晰交互演示）</div>
-            </div>
-
-            <div class="dash">
-              <div class="kpi-row">
-                <div class="kpi card">
-                  <div class="kpi-label">本周 AI 使用学校</div>
-                  <div class="kpi-value" id="kpiSchools">—</div>
-                  <div class="kpi-sub">较上周 <span id="kpiSchoolsDelta">—</span></div>
-                </div>
-                <div class="kpi card">
-                  <div class="kpi-label">教师备课提效</div>
-                  <div class="kpi-value" id="kpiEff">—</div>
-                  <div class="kpi-sub">平均节省 <span id="kpiEffSub">—</span></div>
-                </div>
-                <div class="kpi card">
-                  <div class="kpi-label">风险预警（需关注）</div>
-                  <div class="kpi-value" id="kpiRisk">—</div>
-                  <div class="kpi-sub">异常作业/出勤/舆情</div>
-                </div>
-              </div>
-
-              <div class="dash-main">
-                <div class="card">
-                  <div class="card-hd dash-hd">
-                    <div>
-                      <div class="card-title">趋势总览</div>
-                      <div class="card-sub">点击时间范围切换数据（SVG 动画）</div>
-                    </div>
-                    <div class="seg">
-                      <button class="seg-btn seg-on" data-range="7d">近 7 天</button>
-                      <button class="seg-btn" data-range="30d">近 30 天</button>
-                      <button class="seg-btn" data-range="term">本学期</button>
-                    </div>
-                  </div>
-                  <div class="card-bd">
-                    <svg id="trendSvg" class="trend" viewBox="0 0 700 240" preserveAspectRatio="none">
-                      <path id="trendGrid" d="M0 40 H700 M0 80 H700 M0 120 H700 M0 160 H700 M0 200 H700" class="trend-grid"></path>
-                      <path id="trendPath" d="" class="trend-line"></path>
-                      <circle id="trendDot" r="5" cx="0" cy="0" class="trend-dot"></circle>
-                    </svg>
-                    <div class="trend-legend">
-                      <span class="legend-item"><i class="legend-dot"></i> AI 会话量</span>
-                      <span class="legend-item"><i class="legend-dot"></i> 教学工具调用</span>
-                      <span class="legend-item"><i class="legend-dot"></i> 治理钻取次数</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="card">
-                  <div class="card-hd">
-                    <div class="card-title">实时行为流</div>
-                    <div class="card-sub">清晰列表 + 轻量滚动（演示）</div>
-                  </div>
-                  <div class="card-bd list" id="activityFeed"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- VIEW: Knowledge Base -->
-        <div id="view-kb" class="view">
-          <div class="page">
-            <div class="page-hd">
-              <h2 class="page-title">学校私有知识库管理</h2>
-              <div class="page-sub">条目编写 · 审核发布 · 命中统计（演示）</div>
-            </div>
-
-            <div class="kb">
-              <div class="kb-left card">
-                <div class="card-hd">
-                  <div class="card-title">条目编辑</div>
-                  <div class="card-sub">结构化字段（演示）</div>
-                </div>
-                <div class="card-bd">
-                  <div class="form">
-                    <div class="form-row">
-                      <label class="label">标题</label>
-                      <input class="input" value="课后服务选课指南" />
-                    </div>
-                    <div class="form-row">
-                      <label class="label">分类</label>
-                      <select class="select">
-                        <option>办事指南</option>
-                        <option>通知公告</option>
-                        <option>制度规范</option>
-                      </select>
-                    </div>
-                    <div class="form-row">
-                      <label class="label">正文</label>
-                      <textarea class="textarea" rows="8">包含流程、材料、时间、联系方式…（演示）</textarea>
-                    </div>
-                    <div class="form-actions">
-                      <button class="btn btn-secondary">保存草稿</button>
-                      <button class="btn btn-primary">提交审核</button>
-                    </div>
-                    <div class="note">演示：命中统计/版本管理/敏感信息脱敏可在二期平台能力层实现。</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="kb-right card">
-                <div class="card-hd">
-                  <div class="card-title">条目列表</div>
-                  <div class="card-sub">点击切换编辑（演示）</div>
-                </div>
-                <div class="card-bd">
-                  <div class="kb-list">
-                    <div class="kb-item">
-                      <div class="kb-title">本周家长会参会入口与注意事项</div>
-                      <div class="kb-meta">通知公告 · 更新：2026-01-18 · 命中：31</div>
-                      <span class="pill pill-success">已发布</span>
-                    </div>
-                    <div class="kb-item">
-                      <div class="kb-title">课后服务选课指南</div>
-                      <div class="kb-meta">办事指南 · 更新：2026-01-15 · 命中：42</div>
-                      <span class="pill pill-success">已发布</span>
-                    </div>
-                    <div class="kb-item">
-                      <div class="kb-title">学生请假与到校管理规范</div>
-                      <div class="kb-meta">制度规范 · 更新：2026-01-10 · 命中：18</div>
-                      <span class="pill pill-muted">草稿</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </section>
-    </main>
-  </div>
-
-  <!-- Role Modal -->
-  <div id="roleModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-mask"></div>
-    <div class="modal-card">
-      <div class="modal-hd">
-        <div>
-          <div class="modal-title">选择身份进入演示</div>
-          <div class="modal-sub">未选择身份也可先浏览“AI智能门户 / 智能体中心”。</div>
-        </div>
-        <button id="btnCloseRoleModal" class="icon-btn" title="关闭">✕</button>
       </div>
-      <div class="modal-bd role-grid">
-        <button class="role-card" data-role="teacher"><span class="role-ico">👩‍🏫</span><span class="role-name">教师</span><span class="role-desc">备课/批改/教研/成长</span></button>
-        <button class="role-card" data-role="student"><span class="role-ico">🧑‍🎓</span><span class="role-name">学生</span><span class="role-desc">学伴/错题/提升</span></button>
-        <button class="role-card" data-role="homeroom"><span class="role-ico">🧑‍💼</span><span class="role-name">班主任</span><span class="role-desc">通知/评语/家校</span></button>
-        <button class="role-card" data-role="admin"><span class="role-ico">🏛️</span><span class="role-name">教育管理者</span><span class="role-desc">趋势/风险/督导</span></button>
-        <button class="role-card" data-role="parent"><span class="role-ico">👨‍👩‍👧</span><span class="role-name">家长</span><span class="role-desc">家校/校务/解读</span></button>
-      </div>
-      <div class="modal-ft">
-        <button id="btnClearRole" class="btn btn-ghost">清除身份</button>
-        <button id="btnGoPortal" class="btn btn-secondary">先看 AI智能门户</button>
+    </section>
+
+    <div id="modal" class="modal" style="display: none">
+      <div class="modal-mask" onclick="closeModal()"></div>
+      <div class="modal-card">
+        <div class="modal-head"><div class="modal-title" id="modal-title"></div><button class="btn btn-ghost" onclick="closeModal()">X</button></div>
+        <div class="modal-body" id="modal-body"></div>
       </div>
     </div>
-  </div>
 
-  <script src="./assets/app.js"></script>
-</body>
+    <script src="/assets/app.js"></script>
+  </body>
 </html>
