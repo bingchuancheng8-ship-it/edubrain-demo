@@ -70,55 +70,50 @@
         </div>
         <div class="logo-badge" id="app-version">v0.9.2-role</div>
       </div>
+<div class="nav-menu">
+  <div class="nav-item active" id="nav-portal" data-view="portal" onclick="switchView('portal', this)">
+    <div class="nav-icon">🏫</div>
+    AI智能门户
+  </div>
 
-      <div class="nav-menu">
-        <div
-          class="nav-item active"
-          data-view="home"
-          onclick="switchView('home', this)"
-        >
-          <div class="nav-icon">🏠</div>
-          首页入口
-        </div>
+  <div class="nav-item" id="nav-home" data-view="home" onclick="switchView('home', this)">
+    <div class="nav-icon">🏠</div>
+    首页入口
+  </div>
 
-        <div
-          class="nav-item"
-          id="nav-teacher"
-          data-view="teacher"
-          onclick="switchView('teacher', this)"
-        >
-          <div class="nav-icon">👩‍🏫</div>
-          教师工作台
-        </div>
+  <div class="nav-item" id="nav-agents" data-view="agents" onclick="switchView('agents', this)">
+    <div class="nav-icon">🤖</div>
+    智能体中心
+  </div>
 
-        <div
-          class="nav-item"
-          id="nav-student"
-          data-view="student"
-          onclick="switchView('student', this)"
-        >
-          <div class="nav-icon">🧑‍🎓</div>
-          学习伴侣
-        </div>
+  <div class="nav-item" id="nav-teacher" data-view="teacher" onclick="switchView('teacher', this)">
+    <div class="nav-icon">👩‍🏫</div>
+    教师工作台
+  </div>
 
-        <div
-          class="nav-item"
-          id="nav-gov"
-          data-view="gov"
-          onclick="switchView('gov', this)"
-        >
-          <div class="nav-icon">🏛️</div>
-          治理驾驶舱
-        </div>
+  <div class="nav-item" id="nav-student" data-view="student" onclick="switchView('student', this)">
+    <div class="nav-icon">🧑‍🎓</div>
+    学习伴侣
+  </div>
 
-        <div style="margin-top: 10px; padding: 0 10px">
-          <button class="btn btn-ghost" style="width: 100%" onclick="resetRole()">
-            切换身份
-          </button>
-        </div>
-      </div>
+  <div class="nav-item" id="nav-gov" data-view="gov" onclick="switchView('gov', this)">
+    <div class="nav-icon">🏛️</div>
+    治理驾驶舱
+  </div>
 
-      <div class="user-profile">
+  <div class="nav-item" id="nav-kb" data-view="kb" onclick="switchView('kb', this)">
+    <div class="nav-icon">📚</div>
+    知识库管理
+  </div>
+
+  <div style="margin-top: 10px; padding: 0 10px">
+    <button class="btn btn-ghost" style="width: 100%" onclick="resetRole()">
+      切换身份
+    </button>
+  </div>
+</div>
+
+<div class="user-profile">
         <div class="avatar" id="user-avatar">李</div>
         <div class="user-meta">
           <div class="user-name" id="user-name">李老师</div>
@@ -141,8 +136,88 @@
       </header>
 
       <div class="view-wrapper">
+        <!-- PORTAL -->
+<div class="view-container active" id="view-portal">
+  <div class="portal-hero">
+    <div class="portal-left">
+      <div class="portal-badge">AI智能门户 · 结构化服务入口 + 数字人咨询</div>
+      <h1>让家校协同与校务服务“找得到、问得清、办得成”</h1>
+      <p class="portal-desc">
+        以学校私有知识库为底座，面向家长/教师/管理者提供统一入口、智能问答与流程指引，并与教学与治理智能体联动。
+      </p>
+
+      <div class="portal-actions">
+        <button class="btn btn-primary" onclick="showRoleGate()">
+          进入演示系统（选择身份）
+        </button>
+        <button class="btn btn-ghost" onclick="switchView('agents', document.querySelector('[data-view=\'agents\']'))">
+          浏览智能体中心
+        </button>
+      </div>
+
+      <div class="portal-card-grid">
+        <div class="portal-card" onclick="portalGo('news')">
+          <div class="pc-title">校园动态</div>
+          <div class="pc-sub">通知公告 · 活动报名 · 校园要闻</div>
+        </div>
+        <div class="portal-card" onclick="portalGo('service')">
+          <div class="pc-title">办事指南</div>
+          <div class="pc-sub">入学报名 · 课后服务 · 校服/研学</div>
+        </div>
+        <div class="portal-card" onclick="portalGo('homeSchool')">
+          <div class="pc-title">家校沟通</div>
+          <div class="pc-sub">班级通知 · 家长会 · 学情解读</div>
+        </div>
+      </div>
+
+      <div class="portal-section card" id="portal-section">
+        <div class="section-title">今日推荐</div>
+        <div class="section-list">
+          <div class="section-item">本周家长会：周五 19:30 线上会议（点击查看入口与注意事项）</div>
+          <div class="section-item">课后服务选课：开放时间 09:00–18:00（点击查看操作步骤）</div>
+          <div class="section-item">寒假研学：报名截止 1 月 28 日（点击查看行程与缴费）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="portal-right">
+      <div class="dh-card card">
+        <div class="dh-head">
+          <div class="dh-avatar">🧑‍💼</div>
+          <div class="dh-meta">
+            <div class="dh-title">学校数字人 · 智能咨询</div>
+            <div class="dh-sub">支持办事指南 / 校园动态 / 家校问题</div>
+          </div>
+        </div>
+
+        <div class="dh-chat" id="portal-chat">
+          <div class="dh-bubble ai">你好，我是学校智能助手。你可以问我：课后服务怎么选？入学报名需要什么材料？</div>
+        </div>
+
+        <div class="dh-suggest">
+          <button class="chip" onclick="portalAsk('怎么报名课后服务？')">课后服务怎么选？</button>
+          <button class="chip" onclick="portalAsk('入学报名需要哪些材料？')">入学报名材料</button>
+          <button class="chip" onclick="portalAsk('家长会时间和入口？')">家长会入口</button>
+          <button class="chip" onclick="portalAsk('校服如何订购？')">校服订购</button>
+        </div>
+
+        <div class="dh-input">
+          <input id="portal-input" placeholder="输入问题…（演示）" />
+          <button class="btn btn-primary" onclick="portalSend()">发送</button>
+        </div>
+      </div>
+
+      <div class="portal-mini card">
+        <div class="mini-title">与智能体联动</div>
+        <div class="mini-sub">示例：从“家校沟通”一键跳转到班主任智能体批量生成通知/评语。</div>
+        <button class="btn btn-ghost" style="width:100%" onclick="openAgent('homeroom')">打开班主任智能体</button>
+      </div>
+    </div>
+  </div>
+</div>
+
         <!-- HOME -->
-        <div class="view-container active" id="view-home">
+        <div class="view-container" id="view-home">
           <div class="home-hero">
             <h1>今天想做点什么？</h1>
             <p>一句话直达入口：教师 / 学生 / 管理者 各 3 个核心场景</p>
@@ -243,6 +318,13 @@
             <button id="btn-ana" class="btn btn-primary" onclick="setTeacherMode('ana')">
               📊 分析联动
             </button>
+
+<button id="btn-research" class="btn btn-ghost" onclick="setTeacherMode('research')">
+  🧪 教研协同
+</button>
+<button id="btn-growth" class="btn btn-ghost" onclick="setTeacherMode('growth')">
+  🏅 职称成长
+</button>
 
             <div class="teacher-toolbar-right">
               <div class="hint-badge">提示：趋势点位 / 分层卡片 / 异常列表均可联动钻取</div>
@@ -467,6 +549,28 @@
                 </div>
               </div>
             </div>
+
+<!-- RESEARCH -->
+<div class="workspace-view" id="research-view">
+  <div class="empty-state" id="research-placeholder">
+    <div class="empty-icon">🧪</div>
+    <div class="empty-title">教研协同工作区</div>
+    <div class="empty-sub">课题管理 / 成果共享 / 授课视频分析（行为数据化复盘）</div>
+  </div>
+
+  <div id="research-root" class="workspace-scroll" style="display: none"></div>
+</div>
+
+<!-- GROWTH -->
+<div class="workspace-view" id="growth-view">
+  <div class="empty-state" id="growth-placeholder">
+    <div class="empty-icon">🏅</div>
+    <div class="empty-title">职称与成长工作区</div>
+    <div class="empty-sub">职称晋升材料智能梳理 / 名师工作联动（经验沉淀与资源共享）</div>
+  </div>
+
+  <div id="growth-root" class="workspace-scroll" style="display: none"></div>
+</div>
             <!-- /workspace -->
           </div>
         </div>
@@ -646,6 +750,52 @@
     </div>
 
     <!-- JS -->
-    <script src="/assets/app.js"></script>
+    <!-- AGENTS -->
+<div class="view-container" id="view-agents">
+  <div class="agents-head">
+    <h1>智能体中心</h1>
+    <p>按角色与场景快速选择可用智能体（含市级特供示例）。</p>
+
+    <div class="agents-tools">
+      <input id="agents-search" class="magic-input" placeholder="搜索：教案、评语、项目式、课件、门户…" oninput="renderAgents()" />
+      <div class="agents-tags" id="agents-tags"></div>
+    </div>
+  </div>
+
+  <div class="agent-grid" id="agents-grid"></div>
+</div>
+
+<!-- KB -->
+<div class="view-container" id="view-kb">
+  <div class="kb-head">
+    <h1>学校私有知识库管理</h1>
+    <p>上传/编辑/发布学校私域内容，支撑数字人问答与角色智能体（演示）。</p>
+  </div>
+
+  <div class="kb-grid">
+    <div class="card kb-form">
+      <div class="section-title">新增条目</div>
+      <input id="kb-title" class="magic-input" placeholder="标题：如「课后服务选课指南」" />
+      <textarea id="kb-content" class="kb-textarea" placeholder="内容：支持流程、材料、时间、联系方式…（演示）"></textarea>
+      <div class="kb-row">
+        <select id="kb-category" class="kb-select">
+          <option value="办事指南">办事指南</option>
+          <option value="通知公告">通知公告</option>
+          <option value="家校沟通">家校沟通</option>
+          <option value="制度规范">制度规范</option>
+        </select>
+        <button class="btn btn-primary" onclick="kbAdd()">提交审核</button>
+      </div>
+      <div class="kb-hint">提示：演示版将模拟“提交—审核—发布”流程，并记录命中统计。</div>
+    </div>
+
+    <div class="card kb-list">
+      <div class="section-title">条目列表</div>
+      <div id="kb-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/app.js"></script>
   </body>
 </html>
