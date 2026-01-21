@@ -13,8 +13,12 @@
    *  -------------------------- */
   const App = {
     version: "v1.0.0-portal",
-    role: null, // 'teacher' | 'student' | 'admin'
+    role: null, // 'teacher' | 'student' | 'admin' | 'parent'
     view: "portal",
+
+    // sidebar
+    sidebarCollapsed: false,
+    drawerOpen: false,
 
     // teacher
     teacherMode: "ana", // prep | mark | ana | research | growth
@@ -252,11 +256,12 @@ kbItems: [
   }
 
   function roleAllowedViews(role) {
-    // portal/agents 对所有用户开放（含未选身份）
+    // portal/home/agents 对各角色开放（未选身份时由 Role Gate 遮罩拦截）
     const base = ["portal", "home", "agents"];
     if (role === "teacher") return [...base, "teacher"];
     if (role === "student") return [...base, "student"];
     if (role === "admin") return [...base, "gov", "kb"];
+    if (role === "parent") return base;
     return base;
   }
 
@@ -286,6 +291,10 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
     const cMark = $("#home-card-mark");
     const cAna = $("#home-card-ana");
 
+    const cPNotice = $("#home-card-parent-notice");
+    const cPService = $("#home-card-parent-service");
+    const cPReport = $("#home-card-parent-report");
+
     const cGrowth = $("#home-card-growth");
     const cQA = $("#home-card-qa");
     const cWrong = $("#home-card-wrong");
@@ -297,6 +306,10 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
     if (cPrep) cPrep.style.display = role === "teacher" ? "block" : "none";
     if (cMark) cMark.style.display = role === "teacher" ? "block" : "none";
     if (cAna) cAna.style.display = role === "teacher" ? "block" : "none";
+
+    if (cPNotice) cPNotice.style.display = role === "parent" ? "block" : "none";
+    if (cPService) cPService.style.display = role === "parent" ? "block" : "none";
+    if (cPReport) cPReport.style.display = role === "parent" ? "block" : "none";
 
     if (cGrowth) cGrowth.style.display = role === "student" ? "block" : "none";
     if (cQA) cQA.style.display = role === "student" ? "block" : "none";
@@ -313,6 +326,7 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
       if (role === "teacher") tip.innerHTML = `当前身份：<b>教师</b>。你将仅看到教师相关入口（备课/批改/学情联动/教研/成长）。`;
       else if (role === "student") tip.innerHTML = `当前身份：<b>学生</b>。你将仅看到学生相关入口（成长档案/即时答疑/错题巩固）。`;
       else if (role === "admin") tip.innerHTML = `当前身份：<b>教育管理者</b>。你将仅看到管理相关入口（治理总览/风险预警/行为流督导）。`;
+      else if (role === "parent") tip.innerHTML = `当前身份：<b>家长</b>。你将看到门户与共育相关入口（通知公告/校务办理/学情解读）。`;
       else tip.style.display = "none";
     }
 
@@ -333,6 +347,10 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
       if (avatar) avatar.textContent = "教";
       if (name) name.textContent = "教育管理者";
       if (sub) sub.textContent = "区县教育局 · 管理端";
+    } else if (role === "parent") {
+      if (avatar) avatar.textContent = "家";
+      if (name) name.textContent = "家长";
+      if (sub) sub.textContent = "家校协同 · 门户";
     } else {
       if (avatar) avatar.textContent = "访";
       if (name) name.textContent = "访客";
@@ -340,6 +358,51 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
     }
   }
 
+
+
+  /** --------------------------
+   *  Sidebar Drawer / Collapse
+   *  -------------------------- */
+  function isDrawerMode() {
+    try {
+      return window.matchMedia && window.matchMedia("(max-width: 980px)").matches;
+    } catch (e) {
+      return window.innerWidth <= 980;
+    }
+  }
+
+  function syncSidebarUI() {
+    const body = document.body;
+    if (!body) return;
+
+    if (isDrawerMode()) {
+      // drawer mode
+      body.classList.remove("sidebar-collapsed");
+      if (App.drawerOpen) body.classList.add("drawer-open");
+      else body.classList.remove("drawer-open");
+    } else {
+      // desktop mode
+      body.classList.remove("drawer-open");
+      if (App.sidebarCollapsed) body.classList.add("sidebar-collapsed");
+      else body.classList.remove("sidebar-collapsed");
+    }
+  }
+
+  function toggleSidebar() {
+    if (isDrawerMode()) App.drawerOpen = !App.drawerOpen;
+    else App.sidebarCollapsed = !App.sidebarCollapsed;
+    syncSidebarUI();
+  }
+
+  function closeDrawer() {
+    App.drawerOpen = false;
+    syncSidebarUI();
+  }
+
+  function openDrawer() {
+    App.drawerOpen = true;
+    syncSidebarUI();
+  }
   function setRole(role) {
     App.role = role;
     try { localStorage.setItem("edubrain_role", role); } catch (e) {}
@@ -377,6 +440,12 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
       showToast("已以教育管理者身份进入");
       return;
     }
+
+    if (role === "parent") {
+      switchView("portal", document.querySelector('[data-view="portal"]'));
+      showToast("已以家长身份进入");
+      return;
+    }
   }
 
   function resetRole() {
@@ -394,7 +463,7 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
       try { return localStorage.getItem("edubrain_role"); } catch (e) { return null; }
     })();
 
-    if (saved === "teacher" || saved === "student" || saved === "admin") {
+    if (saved === "teacher" || saved === "student" || saved === "admin" || saved === "parent") {
       App.role = saved;
       applyRoleUI();
       hideRoleGate();
@@ -407,17 +476,19 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
         switchView("student", document.querySelector('[data-view="student"]'));
         setStudentTab("growth");
         ensureStudentMounted();
+      } else if (saved === "parent") {
+        switchView("portal", document.querySelector('[data-view="portal"]'));
       } else {
         switchView("gov", document.querySelector('[data-view="gov"]'));
       }
       return;
     }
 
-    // 未选择过身份：默认进入 AI智能门户（无需登录）
+    // 未选择过身份：进入即要求选择身份（Role Gate 遮罩）
     App.role = null;
     applyRoleUI();
-    hideRoleGate();
     switchView("portal", document.querySelector('[data-view="portal"]'));
+    showRoleGate();
   }
 
   function isViewAllowed(viewId) {
@@ -429,6 +500,8 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
    *  View Switch
    *  -------------------------- */
   function switchView(id, navEl) {
+    // 任何页面切换都收起抽屉（移动端）
+    try { closeDrawer(); } catch (e) {}
     // 角色隔离：不允许切入非本角色模块
     if (!isViewAllowed(id)) {
       showToast("当前身份无权访问该模块");
@@ -626,6 +699,14 @@ setBtn(btnGrowth, mode === "growth");
     if (mode === "ana") renderTeacherLinkedArea();
     if (mode === "research") renderTeacherResearch(true);
     if (mode === "growth") renderTeacherGrowth(true);
+  
+
+    // 教研/成长：默认放大工作区，避免与左侧对话面板挤压
+    const split = document.querySelector('#view-teacher .split-layout');
+    if (split) {
+      if (mode === 'research' || mode === 'growth') split.classList.add('wide');
+      else split.classList.remove('wide');
+    }
   }
 
   /** --------------------------
@@ -2735,6 +2816,10 @@ window.growthSyncToKB = growthSyncToKB;
   window.openStudentProfile = openStudentProfile;
   window.showToast = showToast;
 
+  window.toggleSidebar = toggleSidebar;
+  window.closeDrawer = closeDrawer;
+  window.openDrawer = openDrawer;
+
   window.enterStudent = enterStudent;
   window.enterGov = enterGov;
 
@@ -2747,6 +2832,10 @@ window.growthSyncToKB = growthSyncToKB;
 
     // 初始化 role
     ensureRoleReady();
+
+    // Sidebar 初始化与自适应
+    syncSidebarUI();
+    window.addEventListener("resize", () => syncSidebarUI());
 
     // 初始补渲染
     if ($("#trend-canvas") && App.role === "teacher") renderTeacherLinkedArea();
