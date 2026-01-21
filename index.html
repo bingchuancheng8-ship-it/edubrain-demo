@@ -32,13 +32,6 @@
             <div class="role-desc">备课 / 批改 / 学情联动（趋势-分层-异常）</div>
           </div>
 
-          <div class="role-item" onclick="setRole('parent')">
-            <div class="role-tag">家长端</div>
-            <div class="role-icon">🧑‍👧‍👦</div>
-            <div class="role-name">家长</div>
-            <div class="role-desc">通知公告 / 家校沟通 / 学情解读（门户入口）</div>
-          </div>
-
           <div class="role-item" onclick="setRole('student')">
             <div class="role-tag">学生端</div>
             <div class="role-icon">🧑‍🎓</div>
@@ -56,12 +49,10 @@
 
         <div class="role-foot">
           <button class="btn btn-ghost" onclick="resetRole()">清除身份并重选</button>
-          <button class="btn btn-primary" onclick="setRole('parent')">进入家长端</button>
+          <button class="btn btn-primary" onclick="setRole('teacher')">进入教师端</button>
         </div>
       </div>
     </div>
-
-    <div id="drawer-backdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
 
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -77,7 +68,8 @@
           <div class="logo-title">AI EduBrain</div>
           <div class="logo-sub">K12 教育智能体演示</div>
         </div>
-        <div class="logo-badge" id="app-version">v0.9.2-role</div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起/展开侧边栏">☰</button>
+        <div class="logo-badge" id="app-version">v1.3.0-pcfix</div>
       </div>
 <div class="nav-menu">
   <div class="nav-item active" id="nav-portal" data-view="portal" onclick="switchView('portal', this)">
@@ -134,11 +126,8 @@
     <!-- Main -->
     <section class="main-content">
       <header class="top-header" id="top-header">
-        <div class="breadcrumb-wrap">
-          <button class="btn btn-ghost btn-sm sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
-          <div class="breadcrumb">
-            工作区 / <span id="page-title">首页入口</span>
-          </div>
+        <div class="breadcrumb">
+          工作区 / <span id="page-title">首页入口</span>
         </div>
 
         <div class="sys-status">
@@ -160,7 +149,7 @@
 
       <div class="portal-actions">
         <button class="btn btn-primary" onclick="showRoleGate()">
-          切换身份
+          进入演示系统（选择身份）
         </button>
         <button class="btn btn-ghost" onclick="switchView('agents', document.querySelector('[data-view=\'agents\']'))">
           浏览智能体中心
@@ -269,28 +258,6 @@
                 <div class="card-emoji">📊</div>
                 <h3>趋势分层异常</h3>
                 <p>7日趋势 → 分层分布 → 异常钻取（可查看学生档案）</p>
-              </div>
-
-                            <!-- 家长端（3张） -->
-              <div class="feature-card" id="home-card-parent-notice" onclick="switchView('portal', document.querySelector('[data-view=\'portal\']')); portalGo('news')">
-                <div class="tag">家长</div>
-                <div class="card-emoji">📣</div>
-                <h3>通知公告</h3>
-                <p>班级/学校通知一键查看，重要事项智能提醒</p>
-              </div>
-
-              <div class="feature-card" id="home-card-parent-service" onclick="switchView('portal', document.querySelector('[data-view=\'portal\']')); portalGo('service')">
-                <div class="tag">家长</div>
-                <div class="card-emoji">🧾</div>
-                <h3>校务办理</h3>
-                <p>入学报名 / 课后服务 / 校服研学，一句话找入口</p>
-              </div>
-
-              <div class="feature-card" id="home-card-parent-report" onclick="switchView('portal', document.querySelector('[data-view=\'portal\']')); portalGo('homeSchool')">
-                <div class="tag">家长</div>
-                <div class="card-emoji">🧭</div>
-                <h3>学情解读</h3>
-                <p>成长雷达 + 学情报告解读，辅助家校沟通</p>
               </div>
 
               <!-- 学生端（3张） -->
