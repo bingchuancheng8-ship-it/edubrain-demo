@@ -12,7 +12,7 @@
    *   App State (Mock)
    *  -------------------------- */
   const App = {
-    version: "v1.3.0-pcfix",
+    version: "v1.0.0-portal",
     role: null, // 'teacher' | 'student' | 'admin'
     view: "portal",
 
@@ -2736,29 +2736,12 @@ window.growthSyncToKB = growthSyncToKB;
   window.showToast = showToast;
 
   window.enterStudent = enterStudent;
-
-  window.toggleSidebar = toggleSidebar;
   window.enterGov = enterGov;
 
   /** --------------------------
    *  Boot
    *  -------------------------- */
-  
-  // Sidebar (PC collapse)
-  function applySidebarState(){
-    try{
-      const collapsed = localStorage.getItem("sidebarCollapsed") === "1";
-      document.body.classList.toggle("sidebar-collapsed", collapsed);
-    }catch(e){}
-  }
-  function toggleSidebar(){
-    const collapsed = !document.body.classList.contains("sidebar-collapsed");
-    document.body.classList.toggle("sidebar-collapsed", collapsed);
-    try{ localStorage.setItem("sidebarCollapsed", collapsed ? "1" : "0"); }catch(e){}
-  }
-
   function boot() {
-    applySidebarState();
     const ver = $("#app-version");
     if (ver) ver.textContent = App.version;
 
