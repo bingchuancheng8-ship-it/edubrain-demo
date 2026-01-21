@@ -223,8 +223,24 @@ kbItems: [
   /** --------------------------
    *  DOM Helpers
    *  -------------------------- */
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  // Safe DOM helpers (avoid selector DOMException causing blank page)
+  const byId = (id) => document.getElementById(id);
+  const $ = (sel) => {
+    try {
+      return document.querySelector(sel);
+    } catch (e) {
+      console.warn("[AI EduBrain Demo] bad selector:", sel, e);
+      return null;
+    }
+  };
+  const $$ = (sel) => {
+    try {
+      return Array.from(document.querySelectorAll(sel));
+    } catch (e) {
+      console.warn("[AI EduBrain Demo] bad selectorAll:", sel, e);
+      return [];
+    }
+  };
 
   function setText(sel, text) {
     const el = $(sel);
@@ -522,9 +538,20 @@ if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
       if (curNav) curNav.classList.add("active");
     }
 
-    // view active
+    // view active (robust: avoid leaving page blank if selector/id mismatch)
     $$(".view-container").forEach((el) => el.classList.remove("active"));
-    const cur = $("#view-" + id);
+    let cur = byId("view-" + id);
+    if (!cur) {
+      console.warn("[AI EduBrain Demo] view container not found:", id);
+      // hard fallback to portal to prevent blank screen
+      id = "portal";
+      App.view = "portal";
+      cur = byId("view-portal");
+      // sync nav state as well
+      $$(".nav-item").forEach((el) => el.classList.remove("active"));
+      const pn = document.querySelector('[data-view="portal"]');
+      if (pn) pn.classList.add("active");
+    }
     if (cur) cur.classList.add("active");
 
     // title
@@ -2832,6 +2859,11 @@ window.growthSyncToKB = growthSyncToKB;
 
     // 初始化 role
     ensureRoleReady();
+
+    // Fail-safe: prevent blank screen if view activation was interrupted
+    if (!document.querySelector(".view-container.active")) {
+      switchView("portal", document.querySelector('[data-view="portal"]'));
+    }
 
     // Sidebar 初始化与自适应
     syncSidebarUI();
