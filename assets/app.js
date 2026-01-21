@@ -12,17 +12,24 @@
    *   App State (Mock)
    *  -------------------------- */
   const App = {
-    version: "v0.9.2-role",
+    version: "v1.0.0-portal",
     role: null, // 'teacher' | 'student' | 'admin'
-    view: "home",
+    view: "portal",
 
     // teacher
-    teacherMode: "ana", // prep | mark | ana
+    teacherMode: "ana", // prep | mark | ana | research | growth
     trendIndex: 6, // 0..6
     tierFocus: null, // 'A' | 'B' | 'C' | null
     anomalyFilter: "all", // all | missing | error | time
     isScanning: false,
 
+// teacher extend (教研 / 成长)
+researchTab: "topic", // topic | video
+growthTab: "title", // title | master
+selectedProjectId: "R-001",
+videoAnalysisReady: false,
+promotionPackReady: false,
+selectedPromotionLevel: "一级教师",
     // student
     studentTab: "growth", // growth | qa
     currentStudentId: "S-01",
@@ -30,7 +37,20 @@
     // gov
     govMode: "overview", // overview | risk | feed
     feedTimer: null,
-  };
+  
+
+// portal / agents
+pendingAction: null, // function to run after role selection
+agentsTag: "全部",
+agentsQuery: "",
+
+// knowledge base (demo)
+kbItems: [
+  { id: "KB-001", category: "办事指南", title: "课后服务选课指南", status: "已发布", updatedAt: "2026-01-15", hits: 42 },
+  { id: "KB-002", category: "通知公告", title: "本周家长会参会入口与注意事项", status: "已发布", updatedAt: "2026-01-18", hits: 31 },
+  { id: "KB-003", category: "制度规范", title: "学生请假与到校管理规范", status: "已发布", updatedAt: "2026-01-10", hits: 18 },
+],
+};
 
   const Trend = {
     labels: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
@@ -232,10 +252,12 @@
   }
 
   function roleAllowedViews(role) {
-    if (role === "teacher") return ["home", "teacher"];
-    if (role === "student") return ["home", "student"];
-    if (role === "admin") return ["home", "gov"];
-    return ["home"];
+    // portal/agents 对所有用户开放（含未选身份）
+    const base = ["portal", "home", "agents"];
+    if (role === "teacher") return [...base, "teacher"];
+    if (role === "student") return [...base, "student"];
+    if (role === "admin") return [...base, "gov", "kb"];
+    return base;
   }
 
   function applyRoleUI() {
@@ -243,13 +265,21 @@
     const allowed = roleAllowedViews(role);
 
     // 左侧导航显示/隐藏
-    const navTeacher = $("#nav-teacher");
-    const navStudent = $("#nav-student");
-    const navGov = $("#nav-gov");
+    const navPortal = $("#nav-portal");
+const navHome = $("#nav-home");
+const navAgents = $("#nav-agents");
+const navTeacher = $("#nav-teacher");
+const navStudent = $("#nav-student");
+const navGov = $("#nav-gov");
+const navKB = $("#nav-kb");
 
-    if (navTeacher) navTeacher.style.display = allowed.includes("teacher") ? "flex" : "none";
-    if (navStudent) navStudent.style.display = allowed.includes("student") ? "flex" : "none";
-    if (navGov) navGov.style.display = allowed.includes("gov") ? "flex" : "none";
+if (navPortal) navPortal.style.display = allowed.includes("portal") ? "flex" : "none";
+if (navHome) navHome.style.display = allowed.includes("home") ? "flex" : "none";
+if (navAgents) navAgents.style.display = allowed.includes("agents") ? "flex" : "none";
+if (navTeacher) navTeacher.style.display = allowed.includes("teacher") ? "flex" : "none";
+if (navStudent) navStudent.style.display = allowed.includes("student") ? "flex" : "none";
+if (navGov) navGov.style.display = allowed.includes("gov") ? "flex" : "none";
+if (navKB) navKB.style.display = allowed.includes("kb") ? "flex" : "none";
 
     // 首页卡片按角色隐藏：每端 3 张
     const cPrep = $("#home-card-prep");
@@ -280,7 +310,7 @@
     const tip = $("#home-role-tip");
     if (tip) {
       tip.style.display = "block";
-      if (role === "teacher") tip.innerHTML = `当前身份：<b>教师</b>。你将仅看到教师相关入口（备课/批改/学情联动）。`;
+      if (role === "teacher") tip.innerHTML = `当前身份：<b>教师</b>。你将仅看到教师相关入口（备课/批改/学情联动/教研/成长）。`;
       else if (role === "student") tip.innerHTML = `当前身份：<b>学生</b>。你将仅看到学生相关入口（成长档案/即时答疑/错题巩固）。`;
       else if (role === "admin") tip.innerHTML = `当前身份：<b>教育管理者</b>。你将仅看到管理相关入口（治理总览/风险预警/行为流督导）。`;
       else tip.style.display = "none";
@@ -303,6 +333,10 @@
       if (avatar) avatar.textContent = "教";
       if (name) name.textContent = "教育管理者";
       if (sub) sub.textContent = "区县教育局 · 管理端";
+    } else {
+      if (avatar) avatar.textContent = "访";
+      if (name) name.textContent = "访客";
+      if (sub) sub.textContent = "未选择身份 · 可先体验AI智能门户";
     }
   }
 
@@ -312,6 +346,15 @@
 
     applyRoleUI();
     hideRoleGate();
+
+    // 若存在待执行动作（例如从智能体中心进入），优先执行
+    if (typeof App.pendingAction === "function") {
+      const fn = App.pendingAction;
+      App.pendingAction = null;
+      fn();
+      return;
+    }
+
 
     // 自动跳到角色主页面
     if (role === "teacher") {
@@ -338,7 +381,12 @@
 
   function resetRole() {
     try { localStorage.removeItem("edubrain_role"); } catch (e) {}
-    location.reload();
+    App.role = null;
+    applyRoleUI();
+    hideRoleGate();
+    switchView("portal", document.querySelector('[data-view="portal"]'));
+    showRoleGate();
+    showToast("已退出身份，可重新选择");
   }
 
   function ensureRoleReady() {
@@ -365,9 +413,11 @@
       return;
     }
 
-    // 未选择过身份：默认展示首页 + 弹窗引导
-    App.view = "home";
-    showRoleGate();
+    // 未选择过身份：默认进入 AI智能门户（无需登录）
+    App.role = null;
+    applyRoleUI();
+    hideRoleGate();
+    switchView("portal", document.querySelector('[data-view="portal"]'));
   }
 
   function isViewAllowed(viewId) {
@@ -385,7 +435,7 @@
       const fallback =
         App.role === "student" ? "student" :
         App.role === "admin" ? "gov" :
-        App.role === "teacher" ? "teacher" : "home";
+        App.role === "teacher" ? "teacher" : "portal";
       id = fallback;
     }
 
@@ -405,7 +455,7 @@
     if (cur) cur.classList.add("active");
 
     // title
-    const titles = { home: "首页入口", teacher: "教师工作台", student: "学习伴侣", gov: "治理驾驶舱" };
+    const titles = { portal: "AI智能门户", home: "首页入口", agents: "智能体中心", teacher: "教师工作台", student: "学习伴侣", gov: "治理驾驶舱", kb: "知识库管理" };
     setText("#page-title", titles[id] || "工作区");
 
     // gov behavior
@@ -425,6 +475,10 @@
 
     // student init
     if (id === "student") ensureStudentMounted();
+
+    // portal / agents / kb init
+    if (id === "agents") renderAgents();
+    if (id === "kb") renderKB();
   }
 
   /** --------------------------
@@ -469,6 +523,18 @@
       return;
     }
 
+if (type === "research") {
+  setTeacherMode("research");
+  addMsg("ai", "已进入教研协同：跨校课题管理、成果共享与授课视频复盘（演示）。");
+  return;
+}
+
+if (type === "growth") {
+  setTeacherMode("growth");
+  addMsg("ai", "已进入教师成长：职称材料智能梳理与跨区域名师联动（演示）。");
+  return;
+}
+
     setTeacherMode("ana");
   }
 
@@ -495,9 +561,26 @@
       return enterStudent("growth");
     }
 
-    // teacher
-    if (!v) return startScenario("prep");
-    if (v.includes("批改") || v.includes("作业")) return startScenario("mark");
+// teacher
+if (!v) return startScenario("prep");
+
+// 教研
+if (v.includes("教研") || v.includes("课题") || v.includes("成果") || v.includes("复盘") || v.includes("视频")) {
+  switchView("teacher", document.querySelector('[data-view="teacher"]'));
+  setTeacherMode("research");
+  addMsg("ai", "已进入教研协同：可进行跨校课题管理、成果共享与授课视频复盘（演示）。");
+  return;
+}
+
+// 成长
+if (v.includes("职称") || v.includes("晋升") || v.includes("名师") || v.includes("工作室") || v.includes("业绩")) {
+  switchView("teacher", document.querySelector('[data-view="teacher"]'));
+  setTeacherMode("growth");
+  addMsg("ai", "已进入教师成长：职称材料梳理与名师工作联动（演示）。");
+  return;
+}
+
+if (v.includes("批改") || v.includes("作业")) return startScenario("mark");
     if (v.includes("趋势") || v.includes("分层") || v.includes("异常") || v.includes("分析")) return startScenario("ana");
     if (v.includes("备课") || v.includes("教案")) return startScenario("prep");
 
@@ -511,18 +594,26 @@
     App.teacherMode = mode;
 
     // toggle buttons
-    const btnPrep = $("#btn-prep");
-    const btnMark = $("#btn-mark");
-    const btnAna = $("#btn-ana");
+const btnPrep = $("#btn-prep");
+const btnMark = $("#btn-mark");
+const btnAna = $("#btn-ana");
+const btnResearch = $("#btn-research");
+const btnGrowth = $("#btn-growth");
 
-    if (btnPrep && btnMark && btnAna) {
-      btnPrep.className = "btn " + (mode === "prep" ? "btn-primary" : "btn-ghost");
-      btnMark.className = "btn " + (mode === "mark" ? "btn-primary" : "btn-ghost");
-      btnAna.className  = "btn " + (mode === "ana"  ? "btn-primary" : "btn-ghost");
-    }
+const setBtn = (btn, active) => {
+  if (!btn) return;
+  btn.className = "btn " + (active ? "btn-primary" : "btn-ghost");
+};
 
-    // toggle views
-    const map = { prep: "#prep-view", mark: "#mark-view", ana: "#ana-view" };
+setBtn(btnPrep, mode === "prep");
+setBtn(btnMark, mode === "mark");
+setBtn(btnAna, mode === "ana");
+setBtn(btnResearch, mode === "research");
+setBtn(btnGrowth, mode === "growth");
+
+// toggle views
+
+    const map = { prep: "#prep-view", mark: "#mark-view", ana: "#ana-view", research: "#research-view", growth: "#growth-view" };
     Object.values(map).forEach((v) => {
       const el = $(v);
       if (el) el.classList.remove("active");
@@ -533,6 +624,8 @@
     if (mode === "mark") resetOCR();
     if (mode === "prep") renderLessonCard(false);
     if (mode === "ana") renderTeacherLinkedArea();
+    if (mode === "research") renderTeacherResearch(true);
+    if (mode === "growth") renderTeacherGrowth(true);
   }
 
   /** --------------------------
@@ -557,7 +650,21 @@
     input.value = "";
 
     setTimeout(() => {
-      if (q.includes("趋势") || q.includes("分层") || q.includes("异常") || q.includes("分析")) {
+  // 教研：跨校协同 + 视频复盘
+  if (q.includes("教研") || q.includes("课题") || q.includes("成果") || q.includes("成果共享") || q.includes("复盘") || q.includes("视频")) {
+    addMsg("ai", "已进入教研协同：可进行跨校课题管理、成果共享，并支持授课视频行为分析生成复盘报告。");
+    setTeacherMode("research");
+    return;
+  }
+
+  // 成长：职称晋升 + 名师联动
+  if (q.includes("职称") || q.includes("晋升") || q.includes("名师") || q.includes("工作室") || q.includes("业绩")) {
+    addMsg("ai", "已进入教师成长：支持职称材料智能梳理与跨区域名师工作联动（经验沉淀与资源共享）。");
+    setTeacherMode("growth");
+    return;
+  }
+
+  if (q.includes("趋势") || q.includes("分层") || q.includes("异常") || q.includes("分析")) {
         addMsg("ai", "已加载近7天趋势与班级画像。点击趋势点位将联动刷新分层与异常列表。");
         setTeacherMode("ana");
         renderTeacherLinkedArea();
@@ -587,51 +694,555 @@
    *  Lesson Card
    *  -------------------------- */
   function renderLessonCard(showResult = false) {
-    const placeholder = $("#prep-placeholder");
-    const result = $("#lesson-result");
-    if (!placeholder || !result) return;
+  const placeholder = $("#prep-placeholder");
+  const result = $("#lesson-result");
+  if (!placeholder || !result) return;
 
-    if (!showResult) {
-      placeholder.style.display = "flex";
-      result.style.display = "none";
-      return;
-    }
+  if (!showResult) {
+    placeholder.style.display = "flex";
+    result.style.display = "none";
+    return;
+  }
 
-    placeholder.style.display = "none";
-    result.style.display = "block";
-    result.innerHTML = `
-      <div class="lesson-card">
-        <h2>📘 教学设计：分数应用题（示例）</h2>
-        <div class="timeline">
-          <div class="tl-item">
-            <div class="tl-title">00:00 课堂导入</div>
-            <div class="tl-sub">生活“切蛋糕”情境，引入“单位1”概念</div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-title">05:00 核心探究</div>
-            <div class="tl-sub">画线段图 → 识别单位1 → 列式求解</div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-title">15:00 薄弱点强化</div>
-            <div class="tl-sub">分数÷分数：先化简 → 再乘倒数（3组基础计算）</div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-title">25:00 变式训练</div>
-            <div class="tl-sub">2道同结构变式题：条件变化与单位1对齐</div>
+  placeholder.style.display = "none";
+  result.style.display = "block";
+  result.innerHTML = `
+    <div class="lesson-card">
+      <div class="lesson-head-row">
+        <div>
+          <h2 style="margin:0">📘 教学设计生成（模板驱动 · 演示）</h2>
+          <div class="lesson-sub">模板卡片 + 参数标签 + 结构化输出 + 可导出（对标市级特供智能体交互范式）</div>
+        </div>
+        <div class="lesson-export">
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟导出：Word（演示）')">导出 Word</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟导出：PDF（演示）')">导出 PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟导出：PPT（演示）')">导出 PPT</button>
+        </div>
+      </div>
+
+      <div class="prep-builder card" style="box-shadow:none; border:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.02); margin-top:12px;">
+        <div class="builder-row">
+          <div class="builder-label">模板</div>
+          <div class="tpl-grid" id="prep-tpl-grid">
+            <div class="tpl-card" data-tpl="同步授新课" onclick="setPrepTemplate('同步授新课')">同步授新课</div>
+            <div class="tpl-card" data-tpl="问题链教学" onclick="setPrepTemplate('问题链教学')">问题链教学</div>
+            <div class="tpl-card" data-tpl="项目式学习" onclick="setPrepTemplate('项目式学习')">项目式学习</div>
+            <div class="tpl-card" data-tpl="复习讲评课" onclick="setPrepTemplate('复习讲评课')">复习讲评课</div>
           </div>
         </div>
-        <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:12px;"
-          onclick="showToast('已模拟导出：PPT（演示）')">✨ 导出 PPT</button>
+
+        <div class="builder-row">
+          <div class="builder-label">关键参数</div>
+          <div class="builder-fields">
+            <select id="prep-grade" class="mini-select">
+              <option>小学四年级</option>
+              <option>小学五年级</option>
+              <option>七年级</option>
+              <option selected>高一</option>
+            </select>
+            <select id="prep-subject" class="mini-select">
+              <option selected>数学</option>
+              <option>语文</option>
+              <option>英语</option>
+            </select>
+            <select id="prep-version" class="mini-select">
+              <option selected>人教版</option>
+              <option>北师大版</option>
+              <option>苏教版</option>
+            </select>
+            <select id="prep-duration" class="mini-select">
+              <option>35分钟</option>
+              <option selected>40分钟</option>
+              <option>45分钟</option>
+            </select>
+            <select id="prep-level" class="mini-select">
+              <option>基础偏弱</option>
+              <option selected>中等混合</option>
+              <option>基础较强</option>
+            </select>
+            <label class="mini-check">
+              <input type="checkbox" id="prep-deep" />
+              深度推理
+            </label>
+          </div>
+        </div>
+
+        <div class="builder-row">
+          <div class="builder-label">补充要求</div>
+          <input id="prep-extra" class="magic-input" placeholder="如：补齐薄弱点强化环节/分层作业/课堂互动…" value="补齐薄弱点强化环节，生成分层练习与评价要点" />
+        </div>
+
+        <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="prepGenerate()">一键生成</button>
+        <div class="compliance-tip">合规提示：输出仅用于教学参考，避免包含未成年人隐私与敏感信息（演示）。</div>
+      </div>
+
+      <div id="prep-generated" class="prep-generated"></div>
+    </div>
+  `;
+
+  // 首次进入默认生成一版
+  setTimeout(() => prepInit(), 0);
+}
+
+  /*
+/** --------------------------
+ *  Teacher: Research (教研) & Growth (成长)
+ *  -------------------------- */
+
+const TeacherResearchProjects = [
+  {
+    id: "R-001",
+    title: "分层作业策略优化（跨校）",
+    status: "进行中",
+    schools: ["朝阳一小", "通州二中"],
+    updated: "2026-01-18",
+    owner: "李老师",
+    goal: "以班级画像为依据，形成“分层作业 + 讲评课问题链”共案，并验证对薄弱点掌握度提升的效果。",
+  },
+  {
+    id: "R-002",
+    title: "项目式学习任务设计（语文/综合）",
+    status: "立项中",
+    schools: ["海淀实验中学", "西城四小"],
+    updated: "2026-01-12",
+    owner: "张老师",
+    goal: "围绕“项目式学习”模板沉淀任务包与评价量规，实现跨校复用。",
+  },
+  {
+    id: "R-003",
+    title: "课堂提问质量提升（视频循证）",
+    status: "复盘中",
+    schools: ["东城七中", "顺义一中"],
+    updated: "2026-01-08",
+    owner: "王老师",
+    goal: "通过授课视频分析识别提问类型、等待时间与学生参与度，形成可执行改进建议。",
+  },
+];
+
+const ResearchArtifacts = {
+  "R-001": [
+    { name: "共案教案（v0.3）", type: "教案", updated: "2026-01-18" },
+    { name: "分层练习包（A/B/C）", type: "资源包", updated: "2026-01-17" },
+    { name: "教研纪要（第2次）", type: "纪要", updated: "2026-01-16" },
+  ],
+  "R-002": [
+    { name: "项目任务书（模板）", type: "模板", updated: "2026-01-12" },
+    { name: "评价量规（Rubric）", type: "评价", updated: "2026-01-12" },
+  ],
+  "R-003": [
+    { name: "视频复盘报告（样例）", type: "报告", updated: "2026-01-08" },
+  ],
+};
+
+function setResearchTab(tab) {
+  App.researchTab = tab;
+  renderTeacherResearch(true);
+}
+
+function selectResearchProject(id) {
+  App.selectedProjectId = id;
+  renderTeacherResearch(true);
+}
+
+function researchCreateProject() {
+  showToast("已模拟创建课题（演示）");
+}
+
+function researchShareArtifact(name) {
+  showToast(`已模拟共享成果：${name}（演示）`);
+}
+
+function startVideoAnalysis() {
+  if (App.videoAnalysisReady) {
+    showToast("已存在分析结果（演示）");
+    return;
+  }
+  showToast("开始分析授课视频：课堂结构 / 提问质量 / 参与度（演示）");
+  const btn = $("#btn-video-analyze");
+  if (btn) btn.disabled = true;
+
+  setTimeout(() => {
+    App.videoAnalysisReady = true;
+    renderTeacherResearch(true);
+    showToast("分析完成：已生成课堂复盘报告（演示）");
+  }, 900);
+}
+
+function renderTeacherResearch(showUI = true) {
+  const placeholder = $("#research-placeholder");
+  const root = $("#research-root");
+  if (!placeholder || !root) return;
+
+  if (!showUI) {
+    placeholder.style.display = "flex";
+    root.style.display = "none";
+    return;
+  }
+
+  placeholder.style.display = "none";
+  root.style.display = "block";
+
+  // keep selection sane
+  const selected =
+    TeacherResearchProjects.find((p) => p.id === App.selectedProjectId) || TeacherResearchProjects[0];
+  App.selectedProjectId = selected.id;
+
+  const tab = App.researchTab || "topic";
+  const tabTopic = tab === "topic";
+  const tabVideo = tab === "video";
+
+  const projectList = TeacherResearchProjects.map((p) => {
+    const active = p.id === selected.id ? "active" : "";
+    return `
+      <div class="research-item ${active}" onclick="selectResearchProject('${p.id}')">
+        <div class="ri-top">
+          <div class="ri-title">${p.title}</div>
+          <div class="ri-status ${p.status === "进行中" ? "s-on" : p.status === "立项中" ? "s-new" : "s-review"}">${p.status}</div>
+        </div>
+        <div class="ri-sub">${p.schools.join(" · ")} · 负责人：${p.owner}</div>
+        <div class="ri-sub">最近更新：${p.updated}</div>
       </div>
     `;
+  }).join("");
+
+  const artifacts = (ResearchArtifacts[selected.id] || []).map((a) => {
+    return `
+      <div class="archive-item">
+        <div class="archive-title">${a.name}</div>
+        <div class="archive-sub">类型：${a.type} · 更新：${a.updated}</div>
+        <div class="archive-footer">
+          <button class="btn btn-ghost btn-sm" onclick="researchShareArtifact('${a.name.replace(/'/g, "\\'")}')">共享</button>
+          <button class="btn btn-primary btn-sm" onclick="showToast('已模拟下载：${a.name}（演示）')">下载</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const videoPanel = (() => {
+    if (!App.videoAnalysisReady) {
+      return `
+        <div class="res-card">
+          <div class="res-title">授课视频分析（行为数据化复盘）</div>
+          <div class="res-sub">上传/选择授课视频 → 自动识别课堂环节、提问类型、学生参与度，生成可执行复盘建议。</div>
+          <div class="teacher-actions-row">
+            <button class="btn btn-ghost" onclick="showToast('已模拟上传授课视频（演示）')">上传视频</button>
+            <button class="btn btn-primary" id="btn-video-analyze" onclick="startVideoAnalysis()">开始分析（演示）</button>
+          </div>
+          <div class="compliance-tip" style="margin-top:10px;">合规提示：视频仅用于教学行为分析，需取得授权并脱敏处理（演示）。</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="res-card">
+        <div class="res-title">复盘报告（已生成 · 演示）</div>
+        <div class="res-sub">课堂结构识别 + 提问质量评估 + 参与度异常定位（可导出）。</div>
+
+        <div class="mini-kpi-row">
+          <div class="mini-kpi">
+            <div class="mk-l">有效教学时长</div>
+            <div class="mk-v">37 min</div>
+          </div>
+          <div class="mini-kpi">
+            <div class="mk-l">互动次数</div>
+            <div class="mk-v">18</div>
+          </div>
+          <div class="mini-kpi">
+            <div class="mk-l">高阶问题占比</div>
+            <div class="mk-v">22%</div>
+          </div>
+          <div class="mini-kpi">
+            <div class="mk-l">低参与学生</div>
+            <div class="mk-v">5</div>
+          </div>
+        </div>
+
+        <div class="gap-box" style="margin-top:12px;">
+          <div class="gap-title">关键发现（示例）</div>
+          <ul class="gap-list">
+            <li>导入环节偏长（11min），建议将“情境导入”压缩至 6–7min。</li>
+            <li>提问以“识记/理解”为主，高阶追问不足；建议加入 3 轮“为什么/如果/对比”追问。</li>
+            <li>第 3 排与后排出现持续低参与（≥ 8min），建议增加小组协作与点名反馈频率。</li>
+          </ul>
+        </div>
+
+        <div class="teacher-actions-row" style="margin-top:12px;">
+          <button class="btn btn-ghost" onclick="showToast('已模拟生成：课堂时间轴（演示）')">查看时间轴</button>
+          <button class="btn btn-ghost" onclick="showToast('已模拟定位：低参与学生名单（演示）')">定位异常学生</button>
+          <button class="btn btn-primary" onclick="showToast('已模拟导出：复盘报告 PDF（演示）')">导出报告</button>
+        </div>
+      </div>
+    `;
+  })();
+
+  root.innerHTML = `
+    <div class="lesson-card teacher-extra-shell">
+      <div class="lesson-head-row">
+        <div>
+          <h2 style="margin:0">🧪 跨校教研协同（课题管理 + 成果共享）</h2>
+          <div class="lesson-sub">“平台 + 智能体”模式：从课题到共案到循证复盘，沉淀可复用教研资产（演示）</div>
+        </div>
+        <div class="lesson-export">
+          <button class="btn btn-ghost btn-sm" onclick="researchCreateProject()">新建课题</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟：发起跨校教研会议（演示）')">发起教研会议</button>
+          <button class="btn btn-primary btn-sm" onclick="showToast('已模拟导出：教研成果包（演示）')">导出成果包</button>
+        </div>
+      </div>
+
+      <div class="student-tabs" style="margin-top:12px;">
+        <div class="tab-btn ${tabTopic ? "active" : ""}" onclick="setResearchTab('topic')">课题协同</div>
+        <div class="tab-btn ${tabVideo ? "active" : ""}" onclick="setResearchTab('video')">授课视频分析</div>
+      </div>
+
+      <div class="teacher-extra-grid">
+        <div>
+          <div class="res-card">
+            <div class="res-title">课题列表（跨校）</div>
+            <div class="res-sub">选择课题 → 查看目标、成员与成果（演示）。</div>
+            <div class="research-list">${projectList}</div>
+          </div>
+        </div>
+
+        <div>
+          ${tabTopic ? `
+            <div class="res-card">
+              <div class="res-title">课题详情：${selected.title}</div>
+              <div class="res-sub">${selected.schools.join(" · ")} · 负责人：${selected.owner} · 更新：${selected.updated}</div>
+
+              <div class="gap-box" style="margin-top:10px;">
+                <div class="gap-title">目标与产出（示例）</div>
+                <ul class="gap-list">
+                  <li>${selected.goal}</li>
+                  <li>形成“共案教案 + 分层练习 + 评价量规 + 复盘报告”标准化资产。</li>
+                </ul>
+              </div>
+
+              <div class="teacher-actions-row" style="margin-top:12px;">
+                <button class="btn btn-ghost" onclick="showToast('已模拟：添加成员/学校（演示）')">添加协同学校</button>
+                <button class="btn btn-ghost" onclick="showToast('已模拟：发布任务清单（演示）')">发布任务清单</button>
+                <button class="btn btn-primary" onclick="showToast('已模拟：AI生成教研纪要（演示）')">AI生成纪要</button>
+              </div>
+            </div>
+
+            <div style="height:12px;"></div>
+
+            <div class="res-card">
+              <div class="res-title">成果共享（可复用资产）</div>
+              <div class="res-sub">统一结构化封装：版本、来源、适用学段/教材、可量化成效（演示）。</div>
+              <div class="archive-list" style="margin-top:10px;">${artifacts || '<div class="empty-sub">暂无成果（演示）</div>'}</div>
+            </div>
+          ` : videoPanel}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function setGrowthTab(tab) {
+  App.growthTab = tab;
+  renderTeacherGrowth(true);
+}
+
+function setPromotionLevel(v) {
+  App.selectedPromotionLevel = v;
+}
+
+function buildPromotionPack() {
+  App.promotionPackReady = true;
+  showToast("已生成职称材料清单与缺失项提示（演示）");
+  renderTeacherGrowth(true);
+}
+
+function growthSyncToKB(title) {
+  const item = {
+    id: "KB-" + Math.random().toString(16).slice(2, 8),
+    title: title,
+    type: "教研成果",
+    status: "已发布",
+    updated: "2026-01-21",
+  };
+  App.kbItems.unshift(item);
+  showToast("已沉淀到区级知识库（演示）");
+}
+
+function renderTeacherGrowth(showUI = true) {
+  const placeholder = $("#growth-placeholder");
+  const root = $("#growth-root");
+  if (!placeholder || !root) return;
+
+  if (!showUI) {
+    placeholder.style.display = "flex";
+    root.style.display = "none";
+    return;
   }
+
+  placeholder.style.display = "none";
+  root.style.display = "block";
+
+  const tab = App.growthTab || "title";
+  const tabTitle = tab === "title";
+  const tabMaster = tab === "master";
+
+  const level = App.selectedPromotionLevel || "一级教师";
+
+  const titlePanel = `
+    <div class="res-card">
+      <div class="res-title">职称晋升材料智能梳理</div>
+      <div class="res-sub">业绩成果聚合 + 证明材料归档 + 缺失项提示 + 一键打包导出（演示）。</div>
+
+      <div class="teacher-form-row">
+        <select class="mini-select" onchange="setPromotionLevel(this.value)">
+          <option ${level === "二级教师" ? "selected" : ""}>二级教师</option>
+          <option ${level === "一级教师" ? "selected" : ""}>一级教师</option>
+          <option ${level === "高级教师" ? "selected" : ""}>高级教师</option>
+        </select>
+        <select class="mini-select">
+          <option>近3年</option>
+          <option selected>近5年</option>
+          <option>近8年</option>
+        </select>
+        <select class="mini-select">
+          <option selected>教学业绩</option>
+          <option>教研成果</option>
+          <option>竞赛辅导</option>
+          <option>培训与讲座</option>
+        </select>
+        <button class="btn btn-ghost" onclick="showToast('已模拟上传：证明材料（演示）')">上传证明</button>
+        <button class="btn btn-primary" onclick="buildPromotionPack()">一键梳理</button>
+      </div>
+
+      ${App.promotionPackReady ? `
+        <div class="gap-box" style="margin-top:12px;">
+          <div class="gap-title">材料清单（${level} · 示例）</div>
+          <ul class="gap-list">
+            <li>教学业绩：学期教学任务书、教学效果数据（学情报告/质量监测）、公开课证明</li>
+            <li>教研成果：课题立项/结题证明、论文/案例、校本课程/资源包</li>
+            <li>荣誉奖励：区级以上奖项、竞赛指导获奖证明</li>
+            <li>继续教育：培训学时、研修证书、名师工作室活动证明</li>
+          </ul>
+        </div>
+
+        <div class="gap-box" style="margin-top:12px;">
+          <div class="gap-title">缺失项提示（示例）</div>
+          <ul class="gap-list">
+            <li>近两学期“学情改进闭环”证据不足：建议补充“改进方案 + 前后对比数据”。</li>
+            <li>公开课材料缺“听评课记录”：建议从教研平台一键补齐并签章归档。</li>
+          </ul>
+        </div>
+
+        <div class="teacher-actions-row" style="margin-top:12px;">
+          <button class="btn btn-ghost" onclick="showToast('已模拟生成：申报表自动填充（演示）')">自动填表</button>
+          <button class="btn btn-ghost" onclick="showToast('已模拟：材料按条目自动归档（演示）')">自动归档</button>
+          <button class="btn btn-primary" onclick="showToast('已模拟导出：职称申报材料包（演示）')">导出申报包</button>
+        </div>
+      ` : `
+        <div class="compliance-tip" style="margin-top:10px;">提示：材料梳理需对接校务系统/档案系统；演示中仅展示交互范式。</div>
+      `}
+    </div>
+  `;
+
+  const masterPanel = `
+    <div class="res-card">
+      <div class="res-title">跨区域名师工作联动</div>
+      <div class="res-sub">经验沉淀（可检索）+ 资源共享（可复用）+ 活动协同（可量化）（演示）。</div>
+
+      <div class="mini-kpi-row" style="margin-top:10px;">
+        <div class="mini-kpi">
+          <div class="mk-l">工作室成员</div>
+          <div class="mk-v">38</div>
+        </div>
+        <div class="mini-kpi">
+          <div class="mk-l">共享资源包</div>
+          <div class="mk-v">126</div>
+        </div>
+        <div class="mini-kpi">
+          <div class="mk-l">联合教研活动</div>
+          <div class="mk-v">12</div>
+        </div>
+        <div class="mini-kpi">
+          <div class="mk-l">复用次数</div>
+          <div class="mk-v">1,240</div>
+        </div>
+      </div>
+
+      <div class="gap-box" style="margin-top:12px;">
+        <div class="gap-title">本周协同计划（示例）</div>
+        <ul class="gap-list">
+          <li>周三 19:30：跨区同课异构（数学：函数图像）</li>
+          <li>周五 15:00：课堂视频循证复盘（提问链优化）</li>
+        </ul>
+      </div>
+
+      <div class="teacher-actions-row" style="margin-top:12px;">
+        <button class="btn btn-ghost" onclick="showToast('已模拟：发起跨区共备（演示）')">发起共备</button>
+        <button class="btn btn-ghost" onclick="showToast('已模拟：共享资源包（演示）')">共享资源包</button>
+        <button class="btn btn-primary" onclick="growthSyncToKB('名师工作室 · 课堂提问链最佳实践')">沉淀到知识库</button>
+      </div>
+
+      <div class="archive-list" style="margin-top:12px;">
+        <div class="archive-item">
+          <div class="archive-title">最佳实践：问题链教学（模板 + 案例）</div>
+          <div class="archive-sub">适用：初中数学 · 版本：v1.1 · 复用：268 次</div>
+        </div>
+        <div class="archive-item">
+          <div class="archive-title">资源包：分层练习（A/B/C）+ 讲评课脚本</div>
+          <div class="archive-sub">适用：七年级数学 · 复用：412 次</div>
+        </div>
+        <div class="archive-item">
+          <div class="archive-title">循证复盘：课堂互动提升路径（含指标口径）</div>
+          <div class="archive-sub">输出：复盘报告模板 · 复用：197 次</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  root.innerHTML = `
+    <div class="lesson-card teacher-extra-shell">
+      <div class="lesson-head-row">
+        <div>
+          <h2 style="margin:0">🏅 教师成长（职称晋升 + 名师联动）</h2>
+          <div class="lesson-sub">以“证据链”组织材料，以“知识库”沉淀经验，以“协同”放大名师价值（演示）</div>
+        </div>
+        <div class="lesson-export">
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟：同步校务档案（演示）')">同步档案</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已模拟：生成年度业绩汇总（演示）')">生成汇总</button>
+          <button class="btn btn-primary btn-sm" onclick="showToast('已模拟导出：成长档案包（演示）')">导出档案包</button>
+        </div>
+      </div>
+
+      <div class="student-tabs" style="margin-top:12px;">
+        <div class="tab-btn ${tabTitle ? "active" : ""}" onclick="setGrowthTab('title')">职称晋升材料</div>
+        <div class="tab-btn ${tabMaster ? "active" : ""}" onclick="setGrowthTab('master')">名师工作联动</div>
+      </div>
+
+      ${tabTitle ? titlePanel : masterPanel}
+    </div>
+  `;
+}
 
   /** --------------------------
    *  Teacher Linked Area (Trend <-> Tier <-> Anomaly)
    *  -------------------------- */
   function ensureTeacherMounted() {
+  if (App.teacherMode === "ana") {
     renderTeacherLinkedArea();
+    return;
   }
+  if (App.teacherMode === "prep") {
+    renderLessonCard(false);
+    return;
+  }
+  if (App.teacherMode === "research") {
+    renderTeacherResearch(true);
+    return;
+  }
+  if (App.teacherMode === "growth") {
+    renderTeacherGrowth(true);
+    return;
+  }
+  // default
+  renderTeacherLinkedArea();
+}
 
   function renderTeacherLinkedArea() {
     const day = DailyClassData[App.trendIndex];
@@ -1670,11 +2281,421 @@
     App.feedTimer = null;
   }
 
-  /** --------------------------
+  
+/** --------------------------
+ *  Portal / Agents / KB
+ *  -------------------------- */
+
+const AgentCatalog = [
+  {
+    id: "portal",
+    name: "AI智能门户",
+    badge: "统一入口",
+    desc: "门户（结构化）+ 数字人（对话）双通道，承载校园动态、办事指南与家校协同。",
+    tags: ["市级特供", "助管", "门户"],
+    recommendedRole: null,
+    action: () => switchView("portal", document.querySelector('[data-view="portal"]')),
+  },
+  {
+    id: "teacher_prep",
+    name: "小学数学教学设计智能体",
+    badge: "助教",
+    desc: "模板驱动生成教案/课标分析/教学活动与评价建议，并支持导出。",
+    tags: ["市级特供", "助教", "模板驱动"],
+    recommendedRole: "teacher",
+    action: () => startScenario("prep"),
+  },
+  {
+    id: "homeroom",
+    name: "班主任智能体",
+    badge: "助育",
+    desc: "通知公告生成、家校沟通话术、批量评语与个性化提醒（演示）。",
+    tags: ["市级特供", "助育", "助评"],
+    recommendedRole: "teacher",
+    action: () => startScenario("mark"),
+  },
+  {
+    id: "english_write",
+    name: "小学英语读写写作智能体",
+    badge: "助学",
+    desc: "分层写作引导、范文改写与语言要点提示（演示）。",
+    tags: ["市级特供", "助学", "多轮引导"],
+    recommendedRole: "student",
+    action: () => enterStudent("qa"),
+  },
+  {
+    id: "pbl_chinese",
+    name: "初中语文学科项目式学习智能体",
+    badge: "项目式",
+    desc: "从驱动问题—任务拆解—成果评价，生成可执行的项目式学习方案（演示）。",
+    tags: ["市级特供", "助教", "项目式"],
+    recommendedRole: "teacher",
+    action: () => startScenario("prep"),
+  },
+  {
+    id: "math_high",
+    name: "高中数学教学助手",
+    badge: "工作台式",
+    desc: "模板卡片 + 参数标签 + 结构化输出，强调可控与可导出（演示）。",
+    tags: ["市级特供", "助教", "工作台"],
+    recommendedRole: "teacher",
+    action: () => startScenario("prep"),
+  },
+  {
+    id: "gov_overview",
+    name: "校长/管理者智能体",
+    badge: "助管",
+    desc: "问数据、看预警、给抓手：治理总览与风险督导联动（演示）。",
+    tags: ["市级特供", "助管", "治理"],
+    recommendedRole: "admin",
+    action: () => enterGov("overview"),
+  },
+  {
+    id: "kb",
+    name: "学校私有知识库管理",
+    badge: "底座",
+    desc: "上传/维护/发布学校私域内容，支撑数字人问答与智能体稳定输出。",
+    tags: ["平台能力", "知识库", "合规"],
+    recommendedRole: "admin",
+    action: () => switchView("kb", document.querySelector('[data-view="kb"]')),
+  },
+];
+
+const AgentTags = (() => {
+  const s = new Set();
+  AgentCatalog.forEach(a => (a.tags || []).forEach(t => s.add(t)));
+  return ["全部", ...Array.from(s)];
+})();
+
+function openAgent(agentId) {
+  const agent = AgentCatalog.find(a => a.id === agentId);
+  if (!agent) return showToast("未找到该智能体");
+
+  // 推荐身份引导（未选择身份时直接弹窗）
+  if (agent.recommendedRole && App.role !== agent.recommendedRole) {
+    App.pendingAction = () => openAgent(agentId);
+    showRoleGate();
+    showToast(`建议选择“${agent.recommendedRole === "teacher" ? "教师" : agent.recommendedRole === "student" ? "学生" : "教育管理者"}”身份体验该智能体`);
+    return;
+  }
+
+  agent.action();
+}
+
+function setAgentsTag(tag) {
+  App.agentsTag = tag;
+  renderAgents();
+}
+
+function renderAgents() {
+  const qEl = $("#agents-search");
+  App.agentsQuery = (qEl?.value || "").trim();
+
+  // tags
+  const tagsWrap = $("#agents-tags");
+  if (tagsWrap && !tagsWrap.dataset.mounted) {
+    tagsWrap.dataset.mounted = "1";
+    tagsWrap.innerHTML = AgentTags.map(t => `<button class="chip ${t === App.agentsTag ? "chip-active" : ""}" onclick="setAgentsTag('${t}')">${t}</button>`).join("");
+  } else if (tagsWrap) {
+    // refresh active state
+    Array.from(tagsWrap.querySelectorAll("button.chip")).forEach(btn => {
+      const t = btn.textContent.trim();
+      btn.classList.toggle("chip-active", t === App.agentsTag);
+    });
+  }
+
+  const list = $("#agents-grid");
+  if (!list) return;
+
+  const query = App.agentsQuery.toLowerCase();
+  const filtered = AgentCatalog.filter(a => {
+    const hitQ = !query || (a.name + " " + a.desc + " " + (a.tags || []).join(" ")).toLowerCase().includes(query);
+    const hitT = App.agentsTag === "全部" || (a.tags || []).includes(App.agentsTag);
+    return hitQ && hitT;
+  });
+
+  list.innerHTML = filtered.map(a => `
+    <div class="agent-card card" onclick="openAgent('${a.id}')">
+      <div class="agent-top">
+        <div>
+          <div class="agent-name">${a.name}</div>
+          <div class="agent-badge">${a.badge || ""}</div>
+        </div>
+        <div class="agent-role">${a.recommendedRole ? (a.recommendedRole === "teacher" ? "教师" : a.recommendedRole === "student" ? "学生" : "管理") : "通用"}</div>
+      </div>
+      <div class="agent-desc">${a.desc}</div>
+      <div class="agent-tags">
+        ${(a.tags || []).slice(0, 4).map(t => `<span class="tag-pill">${t}</span>`).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+function portalGo(key) {
+  const sec = $("#portal-section");
+  if (!sec) return;
+
+  if (key === "news") {
+    sec.innerHTML = `
+      <div class="section-title">校园动态</div>
+      <div class="section-list">
+        <div class="section-item">校运动会：报名通道已开启（示例）</div>
+        <div class="section-item">心理健康月：线上课程与测评安排（示例）</div>
+        <div class="section-item">本周班级活动：志愿服务与实践记录（示例）</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (key === "service") {
+    sec.innerHTML = `
+      <div class="section-title">办事指南</div>
+      <div class="section-list">
+        <div class="section-item">课后服务：选课入口、时间与常见问题（示例）</div>
+        <div class="section-item">入学报名：材料清单与办理流程（示例）</div>
+        <div class="section-item">校服订购：尺码、支付与售后（示例）</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (key === "homeSchool") {
+    sec.innerHTML = `
+      <div class="section-title">家校沟通</div>
+      <div class="section-list">
+        <div class="section-item">家长会：参会入口、议程与提问方式（示例）</div>
+        <div class="section-item">学情解读：家长版建议与学习陪伴提示（示例）</div>
+        <div class="section-item">活动确认：一键确认/请假/留言（示例）</div>
+      </div>
+    `;
+    return;
+  }
+}
+
+function portalAsk(q) {
+  const chat = $("#portal-chat");
+  if (!chat) return;
+
+  const safe = (s) => String(s).replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+  chat.innerHTML += `<div class="dh-bubble user">${safe(q)}</div>`;
+  chat.scrollTop = chat.scrollHeight;
+
+  const text = q || "";
+  let answer = "我已收到。你可以选择身份进入演示系统，体验更完整的教学、学情与治理智能体。";
+
+  // KB 轻量命中（按标题关键词）
+  const hit = App.kbItems.find(it => (text.includes("课后") && it.title.includes("课后")) ||
+    (text.includes("家长会") && it.title.includes("家长会")) ||
+    (text.includes("请假") && it.title.includes("请假")) ||
+    (text.includes("入学") && it.title.includes("入学")) ||
+    (text.includes("校服") && it.title.includes("校服"))
+  );
+
+  if (text.includes("课后")) {
+    answer = "课后服务一般按“选课入口 → 选择课程 → 确认支付/提交 → 查看排课”完成。你也可以在左侧“办事指南”查看详细步骤（演示）。";
+  } else if (text.includes("入学")) {
+    answer = "入学报名通常需要：户口/居住证明、监护关系材料、预防接种/体检等（以学校实际要求为准）。我可以为你列出材料清单与办理时间（演示）。";
+  } else if (text.includes("家长会")) {
+    answer = "家长会入口一般在“通知公告/班级通知”中，包含会议链接与议程。若你希望，我可以生成一份“参会提醒+提问模板”（演示）。";
+  } else if (text.includes("校服")) {
+    answer = "校服订购通常包含：尺码采集、在线支付、到货试穿与售后。你可以问我“如何测量尺码/如何退换”（演示）。";
+  } else if (hit) {
+    answer = `已为你命中知识库条目：《${hit.title}》（${hit.category}）。你可以在“知识库管理”中查看与维护（演示）。`;
+  }
+
+  setTimeout(() => {
+    chat.innerHTML += `<div class="dh-bubble ai">${safe(answer)}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  }, 260);
+}
+
+function portalSend() {
+  const input = $("#portal-input");
+  if (!input || !input.value.trim()) return;
+  const q = input.value.trim();
+  input.value = "";
+  portalAsk(q);
+}
+
+
+// --- Prep Builder (template + parameters) ---
+function prepInit() {
+  // 默认模板
+  if (!App.prepTemplate) App.prepTemplate = "同步授新课";
+  setPrepTemplate(App.prepTemplate);
+  prepGenerate(true);
+}
+
+function setPrepTemplate(tpl) {
+  App.prepTemplate = tpl;
+  const grid = $("#prep-tpl-grid");
+  if (grid) {
+    Array.from(grid.querySelectorAll(".tpl-card")).forEach(el => {
+      el.classList.toggle("tpl-active", el.getAttribute("data-tpl") === tpl);
+    });
+  }
+}
+
+function prepGenerate(silent = false) {
+  const grade = ($("#prep-grade")?.value || "高一").trim();
+  const subject = ($("#prep-subject")?.value || "数学").trim();
+  const version = ($("#prep-version")?.value || "人教版").trim();
+  const duration = ($("#prep-duration")?.value || "40分钟").trim();
+  const level = ($("#prep-level")?.value || "中等混合").trim();
+  const deep = !!$("#prep-deep")?.checked;
+  const extra = ($("#prep-extra")?.value || "").trim();
+
+  const topic =
+    subject === "数学" ? "函数的概念与表示（示例）" :
+    subject === "语文" ? "《落花生》文本解读（示例）" :
+    "My Weekend Plan 写作（示例）";
+
+  const focus =
+    level.includes("偏弱") ? "关键概念夯实 + 典型例题拆步" :
+    level.includes("较强") ? "综合探究 + 变式提升" :
+    "基础—提升分层 + 当堂反馈纠偏";
+
+  const gen = $("#prep-generated");
+  if (!gen) return;
+
+  gen.innerHTML = `
+    <div class="gen-head">
+      <div>
+        <div class="gen-title">${subject} · ${grade} · ${topic}</div>
+        <div class="gen-sub">模板：<b>${App.prepTemplate}</b> ｜ 版本：${version} ｜ 时长：${duration} ｜ 班情：${level} ${deep ? "｜ 深度推理：开启" : ""}</div>
+      </div>
+      <div class="gen-cta">
+        <button class="btn btn-ghost btn-sm" onclick="showToast('已同步到：作业/测评（演示）')">同步到作业</button>
+        <button class="btn btn-ghost btn-sm" onclick="showToast('已生成：家长版沟通稿（演示）')">生成家长版</button>
+      </div>
+    </div>
+
+    <div class="gen-block">
+      <div class="block-title">一、教学目标（结构化）</div>
+      <ul class="block-list">
+        <li>知识与技能：掌握本课核心概念与典型方法，完成2道当堂检测（示例）。</li>
+        <li>思维与方法：通过“问题链/例题变式”形成迁移策略，聚焦：${focus}。</li>
+        <li>评价与反馈：当堂形成性评价 + 课后分层作业，输出掌握度与薄弱点（演示）。</li>
+      </ul>
+    </div>
+
+    <div class="gen-block">
+      <div class="block-title">二、课堂流程（${duration}）</div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-title">0–5’ 复盘导入</div>
+          <div class="tl-sub">用1道诊断题快速定位易错点，形成“教学抓手清单”。</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-title">5–20’ 核心讲解</div>
+          <div class="tl-sub">按模板“${App.prepTemplate}”组织知识点—例题—反思，给出板书结构（示例）。</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-title">20–35’ 分层练习</div>
+          <div class="tl-sub">A/B/C三层任务：基础巩固→标准达成→挑战提升，并给出讲评顺序。</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-title">35–40’ 当堂评价</div>
+          <div class="tl-sub">2分钟小测 + 口头追问，自动形成“薄弱点名单 + 下一步建议”（演示）。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gen-block">
+      <div class="block-title">三、分层作业与评价要点</div>
+      <div class="pill-row">
+        <span class="tag-pill">A层：必做 6 题</span>
+        <span class="tag-pill">B层：选做 4 题</span>
+        <span class="tag-pill">C层：挑战 2 题</span>
+        <span class="tag-pill">评价：过程性 + 结果性</span>
+      </div>
+      <div class="block-note">补充要求：${extra ? extra : "—"}</div>
+    </div>
+
+    <div class="gen-block">
+      <div class="block-title">四、联动建议（对接学情/治理）</div>
+      <ul class="block-list">
+        <li>课后自动生成：掌握雷达 + 错因聚类 + 复习路径（对接学生端错题巩固）。</li>
+        <li>异常触发：缺交/用时异常/高错题 → 自动进“趋势分层异常”联动钻取（教师端分析）。</li>
+      </ul>
+      <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="startScenario('ana')">🔎 打开趋势分层异常联动</button>
+    </div>
+  `;
+
+  if (!silent) showToast("已生成教学设计（演示）");
+}
+
+  function renderKB() {
+  const list = $("#kb-list");
+  if (!list) return;
+
+  list.innerHTML = App.kbItems
+    .slice()
+    .sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    .map(it => `
+      <div class="kb-item">
+        <div class="kb-item-top">
+          <div class="kb-item-title">${it.title}</div>
+          <div class="kb-item-status ${it.status === "已发布" ? "st-live" : "st-pending"}">${it.status}</div>
+        </div>
+        <div class="kb-item-sub">
+          <span class="tag-pill">${it.category}</span>
+          <span class="kb-meta">更新：${it.updatedAt}</span>
+          <span class="kb-meta">命中：${it.hits || 0}</span>
+        </div>
+      </div>
+    `).join("");
+}
+
+function kbAdd() {
+  const title = ($("#kb-title")?.value || "").trim();
+  const content = ($("#kb-content")?.value || "").trim();
+  const category = ($("#kb-category")?.value || "办事指南").trim();
+  if (!title || !content) return showToast("请填写标题与内容");
+
+  const id = "KB-" + String(Math.floor(Math.random() * 900) + 100);
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+
+  App.kbItems.unshift({ id, category, title, status: "待审核", updatedAt: `${y}-${m}-${d}`, hits: 0 });
+  ($("#kb-title")).value = "";
+  ($("#kb-content")).value = "";
+  renderKB();
+  showToast("已提交审核（演示）");
+
+  // 模拟审核通过
+  setTimeout(() => {
+    const it = App.kbItems.find(x => x.id === id);
+    if (it) it.status = "已发布";
+    renderKB();
+    showToast("审核通过，已发布（演示）");
+  }, 1200);
+}
+
+/** --------------------------
    *  Expose to window (for inline onclick)
    *  -------------------------- */
   window.setRole = setRole;
   window.resetRole = resetRole;
+
+  window.showRoleGate = showRoleGate;
+  window.hideRoleGate = hideRoleGate;
+
+  window.portalGo = portalGo;
+  window.portalAsk = portalAsk;
+  window.portalSend = portalSend;
+
+  window.openAgent = openAgent;
+  window.renderAgents = renderAgents;
+  window.setAgentsTag = setAgentsTag;
+
+  window.renderKB = renderKB;
+  window.kbAdd = kbAdd;
+
+  window.setPrepTemplate = setPrepTemplate;
+  window.prepGenerate = prepGenerate;
 
   window.switchView = switchView;
   window.setTeacherMode = setTeacherMode;
@@ -1686,6 +2707,18 @@
   window.setAnomalyFilter = setAnomalyFilter;
   window.openAnomalyDrawer = openAnomalyDrawer;
   window.runOCR = runOCR;
+
+// 教研 / 成长
+window.setResearchTab = setResearchTab;
+window.selectResearchProject = selectResearchProject;
+window.startVideoAnalysis = startVideoAnalysis;
+window.researchCreateProject = researchCreateProject;
+window.researchShareArtifact = researchShareArtifact;
+
+window.setGrowthTab = setGrowthTab;
+window.setPromotionLevel = setPromotionLevel;
+window.buildPromotionPack = buildPromotionPack;
+window.growthSyncToKB = growthSyncToKB;
 
   window.openModal = openModal;
   window.closeModal = closeModal;
