@@ -136,12 +136,34 @@ body{
 /* Sidebar */
 .sidebar{
   width:270px;
+  transition: width .18s ease, transform .18s ease;
+  overflow:hidden;
   background:#fff;
   border-right:1px solid var(--border);
   display:flex;
   flex-direction:column;
   flex-shrink:0;
   z-index:10;
+}
+
+body.sidebar-collapsed .sidebar{
+  width:0;
+  transform: translateX(-100%);
+  border-right:none;
+}
+
+@media (max-width: 980px){
+  .sidebar{
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    transform: translateX(-105%);
+    width:270px;
+    box-shadow:0 18px 50px rgba(2,6,23,0.35);
+  }
+  body.drawer-open .sidebar{ transform: translateX(0); }
+  body.sidebar-collapsed .sidebar{ width:270px; }
 }
 
 .logo-area{
@@ -262,6 +284,19 @@ body{
 }
 .breadcrumb{ color:var(--sub); font-weight:700; }
 #page-title{ color:var(--text); font-weight:900; }
+
+.breadcrumb-wrap{ display:flex; align-items:center; gap:10px; }
+.sidebar-toggle{ width:38px; justify-content:center; }
+
+.drawer-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,0.5);
+  backdrop-filter: blur(2px);
+  display:none;
+  z-index:9;
+}
+body.drawer-open .drawer-backdrop{ display:block; }
 
 .sys-status{
   display:flex;
@@ -445,6 +480,9 @@ body{
   height: calc(100vh - 64px - 20px - 14px - 20px);
   min-height:520px;
 }
+
+.split-layout.wide{ grid-template-columns:1fr; }
+.split-layout.wide .panel{ display:none; }
 
 .panel{
   background:#fff;
@@ -1319,22 +1357,67 @@ body{
   .card-grid{ grid-template-columns:1fr; }
   .split-layout{ grid-template-columns:1fr; height:auto; }
   .student-grid{ grid-template-columns:1fr; }
-  .qa-layout{ grid-template-columns:1fr; }
+  .qa-layout{ grid-template-columns:1fr; }  .portal-hero{ grid-template-columns:1fr; }
+  .portal-card-grid{ grid-template-columns: repeat(2, 1fr); }
+  .agent-grid{ grid-template-columns: repeat(2, 1fr); }
+  .kb-grid{ grid-template-columns: 1fr; }
+
 }
 
 
 @media (max-width: 720px){
+  .portal-card-grid{ grid-template-columns:1fr; }
+  .agent-grid{ grid-template-columns:1fr; }
   .role-grid{ grid-template-columns:1fr; }
   body{ overflow:auto; }
 }
 
+
+
+/* Generic card (used in Portal / Agents / KB) */
+.card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;
+  box-shadow:0 18px 40px rgba(2,6,23,.18);
+  backdrop-filter: blur(10px);
+}
+
+#view-portal, #view-agents, #view-kb{
+  background:
+    radial-gradient(1100px 700px at 18% 18%, rgba(99,102,241,.30), transparent 60%),
+    radial-gradient(900px 560px at 82% 26%, rgba(168,85,247,.22), transparent 58%),
+    radial-gradient(900px 560px at 50% 100%, rgba(56,189,248,.12), transparent 60%),
+    linear-gradient(180deg, #0b1220, #0b1220);
+  color:rgba(255,255,255,.92);
+}
+
+#view-portal::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cg fill='none' stroke='rgba(255,255,255,0.10)' stroke-width='2'%3E%3Cpath d='M58 70c28-10 58-10 86 0v152c-28-10-58-10-86 0V70z'/%3E%3Cpath d='M176 70c28-10 58-10 86 0v152c-28-10-58-10-86 0V70z'/%3E%3Cpath d='M52 84h92M170 84h92M52 106h92M170 106h92M52 128h92M170 128h92'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='240'%3E%3Cg fill='none' stroke='rgba(99,102,241,0.22)' stroke-width='2'%3E%3Cpath d='M64 176c54-26 102-26 156 0'/%3E%3Cpath d='M84 158c46-20 86-20 132 0'/%3E%3Cpath d='M110 86l18-18 18 18-18 18z'/%3E%3Cpath d='M240 92h110M240 116h110M240 140h110'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 320px 320px, 420px 240px;
+  background-position: 18px 20px, calc(100% - 20px) 46px;
+  background-repeat: repeat, no-repeat;
+  opacity: .55;
+}
+
+#view-portal{ position:relative; }
+#view-agents{ position:relative; }
+#view-kb{ position:relative; }
+
+#view-portal h1, #view-agents h1, #view-kb h1{ color:#fff; }
 
 /* ==========================
    Portal / Agents / KB (v1.0)
    ========================== */
 .portal-hero{
   display:grid;
-  grid-template-columns: 1.3fr 0.7fr;
+  grid-template-columns: 1.15fr 0.85fr;
   gap:16px;
   padding:18px;
 }
