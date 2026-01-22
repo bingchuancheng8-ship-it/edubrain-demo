@@ -995,7 +995,7 @@
             <div class="role-card card-admin" onclick="enterWorkspace('admin')">
                 <div class="role-icon-lg"><i class="ri-government-line"></i></div>
                 <div style="font-weight:600; font-size:18px;">管理驾驶舱</div>
-                <div style="font-size:13px; color:#888; margin-top:8px;">安全 · 活动 · 食堂</div>
+                <div style="font-size:13px; color:#888; margin-top:8px;">安全 · 学情 · 食堂</div>
             </div>
         </div>
     </div>
@@ -1109,10 +1109,10 @@
             admin: {
                 name: "教务主任", role: "管理端", color: "#ef4444", bg: "#fef2f2",
                 greeting: "管理驾驶舱运行中。",
-                placeholder: "查询校园安全或活动策划...",
+                placeholder: "查询校园安全或学情追踪...",
                 pills: [
                     { icon: "ri-alarm-warning-line", text: "校园安全监测", action: "admin_safety" },
-                    { icon: "ri-calendar-event-line", text: "文化活动策划", action: "admin_activity" },
+                    { icon: "ri-calendar-event-line", text: "学情追踪", action: "admin_activity" },
                     { icon: "ri-restaurant-line", text: "食堂智能管理", action: "admin_canteen" }
                 ]
             }
@@ -1952,7 +1952,7 @@ function emitTask(toRole, task) {
                 parent_edu: "孩子最近有些厌学情绪，作为家长我该如何沟通？请提供指导。",
                 
                 admin_safety: "扫描全校安防监控，识别异常人员和区域入侵风险。",
-                admin_activity: "策划一场以“人工智能”为主题的校园文化节活动，生成方案。",
+                admin_activity: "生成初二年级学情分析报告，重点关注薄弱知识点。",
                 admin_canteen: "生成本周食堂运营报告，包含营养分析和学生满意度优化建议。"
             };
             
