@@ -1,801 +1,2920 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI EduBrain | K12 教育智能体演示</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduCore - All-in-One Deep Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            /* === 全局设计变量 === */
+            --bg-body: #ffffff;
+            --bg-sidebar: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-hover: #f1f5f9;
+            --bg-active: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            
+            /* 角色主题色 (动态切换) */
+            --theme-color: #f97316; 
+            --theme-bg: #fff7ed;
+            --theme-hover: #ffedd5;
+            --theme-border: #fecaca;
 
-    <!-- 静态资源全部在 /assets 下 -->
-    <link rel="stylesheet" href="/assets/app.css" />
-    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-  </head>
+            /* 动画曲线 */
+            --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+            --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+            
+            /* 间距系统 */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 20px;
+            --space-2xl: 24px;
+            --space-3xl: 32px;
+            
+            /* 圆角系统 */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --radius-2xl: 20px;
+        }
 
-  <body>
-    <!-- Toast -->
-    <div id="toast" class="toast" style="display: none">提示</div>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { height: 100vh; background: var(--bg-body); color: var(--text-primary); overflow: hidden; position: relative; }
 
-    <!-- Role Gate -->
-    <div id="role-gate" class="role-gate" style="display: none">
-      <div class="role-card">
-        <div class="role-head">
-          <div class="role-title">选择身份进入演示系统</div>
-          <div class="role-sub">
-            系统将按身份隔离，仅展示你所属角色的业务入口。
-          </div>
+        /* =========================================
+           场景 1: 门户页 (Portal)
+           ========================================= */
+        .portal-scene {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20; background: #fff;
+            transition: transform 0.6s var(--ease-spring), opacity 0.4s ease;
+        }
+        .portal-scene.hidden { opacity: 0; transform: scale(0.92) translateY(-40px); pointer-events: none; }
+
+        .portal-header { text-align: center; margin-bottom: 50px; animation: fadeIn 0.8s ease; }
+        .portal-logo { font-size: 48px; margin-bottom: 16px; display: inline-block; }
+        .portal-title { font-size: 32px; font-weight: 600; color: #111; letter-spacing: -0.5px; }
+        .portal-subtitle { font-size: 14px; color: #888; margin-top: 8px; }
+
+        .role-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; max-width: 1000px; width: 100%; padding: 0 40px; }
+        
+        .role-card {
+            background: #fff; 
+            border: 1px solid #eee; 
+            border-radius: 24px; 
+            padding: 32px 24px; 
+            text-align: center;
+            cursor: pointer; 
+            transition: all 0.4s var(--ease-spring); 
+            opacity: 0; 
+            animation: slideUp 0.6s var(--ease-spring) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+        .role-card:nth-child(1) { animation-delay: 0.1s; } 
+        .role-card:nth-child(2) { animation-delay: 0.15s; }
+        .role-card:nth-child(3) { animation-delay: 0.2s; } 
+        .role-card:nth-child(4) { animation-delay: 0.25s; }
+        
+        .role-card:hover { 
+            transform: translateY(-12px) scale(1.02); 
+            box-shadow: 0 24px 48px -12px rgba(0,0,0,0.12); 
+            border-color: transparent; 
+        }
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--theme-color);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .role-card:hover::before {
+            transform: scaleX(1);
+        }
+        .role-icon-lg {
+            width: 64px; height: 64px; margin: 0 auto 24px auto; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px;
+            transition: transform 0.3s var(--ease-spring);
+        }
+        .role-card:hover .role-icon-lg { transform: scale(1.1) rotate(5deg); }
+        
+        /* 门户页特定配色 */
+        .card-teacher:hover { border-top: 4px solid #f97316; } .card-teacher .role-icon-lg { background: #fff7ed; color: #f97316; }
+        .card-student:hover { border-top: 4px solid #3b82f6; } .card-student .role-icon-lg { background: #eff6ff; color: #3b82f6; }
+        .card-parent:hover { border-top: 4px solid #10b981; } .card-parent .role-icon-lg { background: #ecfdf5; color: #10b981; }
+        .card-admin:hover { border-top: 4px solid #ef4444; } .card-admin .role-icon-lg { background: #fef2f2; color: #ef4444; }
+
+        /* =========================================
+           场景 2: 工作台 (Workspace)
+           ========================================= */
+        .workspace-scene {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex;
+            opacity: 0; transform: scale(0.98); pointer-events: none; transition: all 0.6s var(--ease-spring); background: #fff;
+        }
+        .workspace-scene.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            transition: all 0.3s var(--ease-in-out);
+        }
+        .sidebar.collapsed {
+            width: 60px;
+            padding: 24px 12px;
+        }
+        /* 侧边栏收缩时隐藏品牌名称，只保留logo */
+        .sidebar.collapsed .app-brand {
+            font-size: 0;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar.collapsed .app-brand span:first-child {
+            font-size: 24px;
+        }
+
+        /* 通知按钮样式优化 */
+        .nav-item .notif-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            min-width: 12px;
+            height: 12px;
+            padding: 0 4px;
+            border-radius: 9999px;
+            background: #ef4444;
+            color: #fff;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: 800;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+        }
+        /* 有通知时显示气泡提醒 */
+        .nav-item .notif-badge:not(.hidden) {
+            display: flex;
+        }
+        .sidebar.collapsed .user-badge {
+            display: none;
+        }
+        .sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 12px;
+        }
+        .sidebar.collapsed .nav-item span {
+            display: none;
+        }
+        .sidebar.collapsed .nav-item .notif-badge:not(.hidden) {
+            display: inline-block;
+            font-size: 10px;
+        }
+        .main-content {
+            margin-left: 260px;
+            transition: margin-left 0.3s var(--ease-in-out);
+        }
+        .sidebar.collapsed + .main-content {
+            margin-left: 60px;
+        }
+        .sidebar-toggle-internal {
+            margin-left: auto;
+            background: transparent;
+            color: var(--text-primary);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-in-out);
+        }
+        .sidebar-toggle-internal:hover {
+            background: var(--bg-hover);
+            color: var(--theme-color);
+            transform: scale(1.1);
+        }
+        .sidebar-toggle {
+            display: none;
+        }
+        .app-brand {
+            font-weight: 800;
+            font-size: 20px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: #111;
+            width: 100%;
+        }
+        /* 修复通知按钮样式 */
+        .nav-item i {
+            font-size: 18px;
+            color: var(--text-secondary);
+            transition: color 0.3s var(--ease-in-out);
+        }
+        .nav-item:hover i {
+            color: var(--theme-color);
+        }
+        .nav-item.active i {
+            color: var(--theme-color);
+        }
+
+        .user-badge {
+            display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; margin-bottom: 32px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .nav-item { 
+            padding: 12px; 
+            margin-bottom: 4px; 
+            border-radius: 8px; 
+            color: #555; 
+            font-size: 14px; 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-item:hover { 
+            background: #f0f0f0; 
+            color: var(--theme-color); 
+            transform: translateX(4px);
+        }
+        .nav-item.active { 
+            background: #fff; 
+            color: var(--theme-color); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+            font-weight: 600;
+            border-left: 3px solid var(--theme-color);
+        }
+
+        /* Main Content */
+        .main-content { flex: 1; position: relative; display: flex; flex-direction: column; overflow: auto; }
+
+        /* Hero Layer */
+        .hero-layer {
+            position: relative; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            transition: all 0.5s var(--ease-spring); 
+            padding: 40px 20px 20px; 
+            z-index: 5;
+            margin-bottom: 20px;
+        }
+        .hero-layer.hidden { opacity: 0; transform: translateY(-30px); pointer-events: none; }
+        
+        .hero-title { font-size: 36px; font-weight: 400; color: #111; margin-bottom: 40px; text-align: center; }
+        
+        .input-box {
+            width: 100%;
+            max-width: 760px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl) var(--space-2xl);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s var(--ease-in-out);
+            position: relative;
+        }
+        .input-box:focus-within {
+            box-shadow: var(--shadow-lg);
+            border-color: var(--theme-color);
+            transform: translateY(-2px);
+        }
+        textarea {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            resize: none;
+        }
+        input, select {
+            font-size: 14px;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 6px 10px;
+            background: var(--bg-card);
+            transition: all 0.3s var(--ease-in-out);
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+        
+        .pill-container { display: flex; gap: var(--space-md); margin-top: var(--space-3xl); justify-content: center; }
+        .pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: var(--space-md) var(--space-2xl);
+            border-radius: 9999px;
+            font-size: 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            transition: all 0.3s var(--ease-in-out);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .pill:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--theme-color);
+            color: var(--theme-color);
+        }
+        .pill:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Chat Layer */
+        .chat-layer {
+            position: absolute; width: 100%; height: 100%; padding: 0; overflow-y: auto; display: none; background: #fff; scroll-behavior: smooth;
+        }
+        .chat-inner { max-width: 860px; margin: 0 auto; padding: var(--space-3xl) var(--space-2xl) var(--space-3xl) var(--space-2xl); }
+        
+        .message { margin-bottom: var(--space-3xl); opacity: 0; animation: slideUp 0.5s var(--ease-spring) forwards; }
+        .msg-head { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .msg-body { font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+        .artifact-card .card-body { font-size: 12px; line-height: 1.6; }
+
+        /* === 交付物卡片样式 (Rich Artifacts) === */
+        .thinking-box {
+            background: #f9fafb; border-left: 3px solid #e5e7eb; border-radius: 0 8px 8px 0; padding: 16px; margin-bottom: 24px; font-family: 'SF Mono', 'Menlo', monospace; font-size: 13px; color: #6b7280;
+        }
+        .step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; opacity: 0; animation: fadeIn 0.3s forwards; }
+        .step.active { color: var(--theme-color); } .step.done { color: #10b981; }
+
+        .artifact-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            margin-top: var(--space-2xl);
+            overflow: hidden;
+            animation: scaleIn 0.5s var(--ease-spring);
+            transition: all 0.3s var(--ease-in-out);
+        }
+        .artifact-card:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: var(--border-hover);
+        }
+        .card-header {
+            padding: var(--space-lg) var(--space-xl);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-sidebar);
+        }
+        .card-body {
+            padding: var(--space-xl);
+        }
+        .card-actions {
+            padding: var(--space-lg) var(--space-xl);
+            background: var(--bg-sidebar);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-md);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s var(--ease-in-out);
+            box-shadow: var(--shadow-sm);
+        }
+        .btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-primary {
+            background: var(--theme-color);
+            border-color: var(--theme-color);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+        .btn-primary:hover {
+            opacity: 0.95;
+            box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+            transform: translateY(-2px);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+
+        /* === 深度场景专用组件样式 === */
+        /* 通用标签 */
+        .tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+        .tag-green { background: #d1fae5; color: #047857; }
+        .tag-orange { background: #ffedd5; color: #c2410c; }
+        .tag-red { background: #fee2e2; color: #b91c1c; }
+        .tag-blue { background: #dbeafe; color: #1d4ed8; }
+
+        /* 教案/时间轴 */
+        .timeline { display: flex; gap: 12px; overflow-x: auto; padding: 4px; }
+        .t-box { flex: 1; min-width: 100px; background: #fafafa; border: 1px solid #eee; padding: 12px; text-align: center; border-radius: 8px; font-size: 13px; transition: 0.2s; }
+        .t-box:hover { border-color: var(--theme-color); background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        /* 作业分析 - 柱状图模拟 */
+        .bar-chart { display: flex; align-items: flex-end; height: 100px; gap: 8px; padding-top: 20px; }
+        .bar { flex: 1; background: var(--theme-color); opacity: 0.8; border-radius: 4px 4px 0 0; position: relative; }
+        .bar:hover { opacity: 1; }
+        .bar span { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #666; }
+
+        /* 错题诊断 - 对比卡片 */
+        .mistake-split { display: flex; gap: 20px; }
+        .mistake-left { flex: 1; background: #fef2f2; padding: 15px; border-radius: 8px; border: 1px solid #fee2e2; }
+        .mistake-right { flex: 1; background: #ecfdf5; padding: 15px; border-radius: 8px; border: 1px solid #d1fae5; }
+
+        /* 英语对话 - 气泡 */
+        .chat-bubble { padding: 10px 14px; border-radius: 12px; font-size: 12px; margin-bottom: 8px; max-width: 80%; }
+        .bubble-ai { background: #f3f4f6; color: #333; border-bottom-left-radius: 2px; }
+        .bubble-user { background: var(--theme-bg); color: var(--theme-color); margin-left: auto; border-bottom-right-radius: 2px; border: 1px solid var(--theme-color); }
+
+        /* 统计格子 */
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px;}
+        .stat-box { background: #f9fafb; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #eee; }
+        .stat-val { font-size: 20px; font-weight: 700; color: #111; }
+        .stat-lbl { font-size: 12px; color: #666; margin-top: 4px; }
+
+        /* 预警/列表项 */
+        .alert-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .alert-badge { padding: 4px 8px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+        .bg-red { background: #fef2f2; color: #ef4444; }
+        
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
+
+        /* 动画关键帧 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 统一的过渡效果 */
+        .nav-item, .role-card, .todo-item, .todo-card, .kpi, .panel, .artifact-card, .btn, .mini-btn, .pill {
+            transition: all 0.3s var(--ease-in-out);
+        }
+        
+        /* 增强的动画效果 */
+        .message {
+            animation: slideUp 0.5s var(--ease-spring) forwards;
+        }
+        .artifact-card {
+            animation: scaleIn 0.6s var(--ease-spring) forwards;
+        }
+        .role-card {
+            animation: slideUp 0.6s var(--ease-spring) forwards;
+        }
+        .toast {
+            animation: slideUp 0.3s var(--ease-spring) forwards;
+        }
+
+    
+        /* =========================================
+           任务待办 / 角色切换 (链路A增强)
+        ========================================= */
+        .role-switch { margin: 14px 0 10px; padding: 10px; border: 1px solid var(--border-color); border-radius: 12px; background:#fff; }
+        .rs-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+        .rs-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+        .rs-btn { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: #fff; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: 0.2s; }
+        .rs-btn:hover { border-color: var(--theme-color); color: var(--theme-color); }
+
+        .todo-sidebar { margin-top: 10px; padding: 10px; border: 1px solid var(--border-color); border-radius: 12px; background:#fff; }
+        .todo-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center; }
+        .todo-list { display:flex; flex-direction:column; gap:8px; }
+        .todo-item { border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; background:#fafafa; cursor:pointer; transition: 0.2s; }
+        .todo-item:hover { border-color: var(--theme-color); background: #fff; }
+        .todo-item-top { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+        .todo-item-title { font-weight: 650; font-size: 12px; color: var(--text-primary); line-height:1.2; }
+        .todo-item-tag { font-size: 11px; color:#6b7280; background:#f3f4f6; padding: 3px 8px; border-radius: 999px; }
+        .todo-item-desc { margin-top: 6px; font-size: 11px; color: var(--text-secondary); line-height:1.35; }
+
+        .todo-strip { margin: 12px 0 14px; padding: 12px; border: 1px dashed rgba(17,24,39,0.15); border-radius: 16px; background: rgba(255,255,255,0.85); }
+        .todo-strip-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; }
+        .todo-strip-title { font-size: 13px; font-weight: 650; }
+        .todo-strip-sub { font-size: 12px; color: var(--text-secondary); }
+        .todo-strip-cards { display:flex; gap:10px; flex-wrap:wrap; }
+        .todo-card { border: 1px solid var(--border-color); border-radius: 14px; padding: 10px 12px; background:#fff; min-width: 220px; max-width: 340px; cursor:pointer; transition:0.2s; }
+        .todo-card:hover { border-color: var(--theme-color); transform: translateY(-1px); }
+        .todo-card-title { font-weight: 650; font-size: 13px; }
+        .todo-card-desc { margin-top: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.35; }
+        .todo-card-cta { margin-top: 10px; display:flex; gap:8px; }
+        .todo-card-cta .mini-btn { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: #fff; cursor:pointer; font-size: 12px; }
+        .todo-card-cta .mini-btn.primary { border-color: var(--theme-color); color: var(--theme-color); }
+
+        .toast-stack { position: fixed; right: 18px; top: 18px; z-index: 9999; display:flex; flex-direction:column; gap:10px; }
+        .toast { min-width: 260px; max-width: 360px; border: 1px solid var(--border-color); border-left: 4px solid var(--theme-color); border-radius: 14px; padding: 12px 12px; background:#fff; box-shadow: 0 12px 30px rgba(0,0,0,0.08); animation: toastIn 0.25s var(--ease-spring); }
+        .toast-title { font-weight: 650; font-size: 13px; }
+        .toast-desc { margin-top: 6px; font-size: 12px; color: var(--text-secondary); line-height:1.35; }
+        .toast-actions { margin-top: 10px; display:flex; gap:8px; }
+        .toast-actions button { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: #fff; cursor:pointer; font-size: 12px; }
+        .toast-actions button.primary { border-color: var(--theme-color); color: var(--theme-color); }
+        @keyframes toastIn { from { transform: translateY(-6px); opacity:0;} to { transform: translateY(0); opacity:1; } }
+
+    
+        /* ===== Role Dashboard (更贴近真实) ===== */
+        .role-dashboard { width: 100%; max-width: 960px; margin: 0 auto 18px; }
+        .ctx-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid #e5e7eb; border-radius: 14px; background:#fff; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .ctx-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .ctx-pill { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#f9fafb; border:1px solid #e5e7eb; font-size:12px; color:#374151; }
+        .ctx-pill select { border:none; background:transparent; font-size:12px; outline:none; color:#111827; }
+        .ctx-right { display:flex; align-items:center; gap:10px; }
+        .kpi-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:16px; margin-top:16px; height: 120px; }
+        /* 平板设备 */
+        @media (max-width: 980px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .dash-grid {
+                grid-template-columns: 1fr;
+            }
+            .below-panels {
+                grid-template-columns: 1fr;
+            }
+        }
+        .kpi {
+            padding: var(--space-xl);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            background: var(--bg-card);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s var(--ease-in-out);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 100%;
+            backdrop-filter: blur(10px);
+        }
+        .kpi::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--theme-color);
+            transform: scaleX(0);
+            transition: transform 0.3s var(--ease-in-out);
+        }
+        .kpi:hover {
+            box-shadow: var(--shadow-xl);
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+        }
+        .kpi:hover::before {
+            transform: scaleX(1);
+        }
+        .kpi .kpi-val{ 
+            font-size:24px; 
+            font-weight:700; 
+            color:#111827; 
+            margin-bottom:4px;
+        }
+        .kpi .kpi-lbl{ 
+            font-size:12px; 
+            color:#6b7280; 
+            line-height:1.4;
+        }
+        .dash-grid { display:grid; grid-template-columns: 1.2fr 0.8fr; gap:10px; margin-top:10px; }
+
+        .panel { 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-xl); 
+            background: var(--bg-card); 
+            overflow: hidden; 
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s var(--ease-in-out);
+            min-height: 240px;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-bd {
+            flex: 1;
+            padding:20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .below-panels {
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+            margin-top: 12px;
+        }
+
+        .panel:hover { 
+            box-shadow: var(--shadow-md); 
+            border-color: #e5e7eb;
+        }
+        .panel-hd { 
+            padding: var(--space-lg) var(--space-xl); 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            font-size: 14px; 
+            color: var(--text-primary); 
+            font-weight: 700; 
+            background: var(--bg-sidebar);
+        }
+        .panel-bd { 
+            padding: var(--space-xl); 
+        }
+        .item { 
+            display:flex; 
+            gap:16px; 
+            padding:16px 0; 
+            border-bottom:1px solid #f5f5f5; 
+            align-items:flex-start;
+            transition: all 0.2s var(--ease-in-out);
+        }
+        .item:hover { 
+            transform: translateX(8px);
+        }
+        .item:last-child { border-bottom: none; }
+        .item .meta{ flex:1; }
+        .item .title{ 
+            font-size:14px; 
+            color:#111827; 
+            font-weight:650; 
+            margin-bottom:4px;
+        }
+        .item .sub{ 
+            font-size:12px; 
+            color:#6b7280; 
+            line-height:1.5;
+        }
+        .mini-btn {
+            padding: 7px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-in-out);
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+        .mini-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        .mini-btn:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+        .mini-btn.primary {
+            border-color: var(--theme-color);
+            background: var(--theme-color);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+        .mini-btn.primary:hover {
+            opacity: 0.95;
+            box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+            transform: translateY(-2px);
+        }
+        .mini-btn.primary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+        .below-panels { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 16px; 
+            margin-top: 16px; 
+        }
+
+
+        /* ===== Modal (配置推送) ===== */
+        .modal-overlay{ position:fixed; inset:0; background: rgba(17,24,39,0.55); display:none; align-items:center; justify-content:center; z-index: 9999; padding: 18px; }
+        .modal{ width:100%; max-width: 720px; background:#fff; border-radius: 18px; border:1px solid #e5e7eb; box-shadow: 0 30px 80px rgba(0,0,0,0.25); overflow:hidden; }
+        .modal-hd{ padding:14px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eef2f7; }
+        .modal-title{ font-size:14px; font-weight:700; color:#111827; }
+        .modal-bd{ padding:14px 16px; }
+        .modal-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+        /* 移动设备 */
+        @media (max-width: 760px) {
+            .modal-grid {
+                grid-template-columns: 1fr;
+            }
+            .role-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .hero-title {
+                font-size: 28px;
+                margin-bottom: 24px;
+            }
+            .input-box {
+                padding: var(--space-lg) var(--space-xl);
+            }
+            .pill-container {
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 24px;
+            }
+            .pill {
+                padding: var(--space-sm) var(--space-lg);
+            }
+            .main-content {
+                padding: 0 16px;
+            }
+        }
+        
+        /* 小屏移动设备 */
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 24px;
+            }
+            .input-box {
+                padding: var(--space-md) var(--space-lg);
+            }
+            .card-header,
+            .card-body,
+            .card-actions,
+            .panel-hd,
+            .panel-bd {
+                padding: var(--space-md);
+            }
+        }
+        .pick{ border:1px solid #e5e7eb; border-radius: 14px; padding: 12px; background:#fafafa; }
+        .pick .pick-h{ font-size:13px; font-weight:650; color:#111827; display:flex; align-items:center; justify-content:space-between; }
+        .pick ul{ list-style:none; padding-left:0; margin:10px 0 0; display:flex; flex-direction:column; gap:8px; }
+        .pick li{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1px solid #eef2f7; border-radius:12px; padding:8px 10px; }
+        .modal-ft{ padding:14px 16px; border-top:1px solid #eef2f7; display:flex; justify-content:flex-end; gap:10px; }
+        .btn-ghost{ padding:10px 12px; border-radius: 12px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; }
+        .btn-solid{ padding:10px 12px; border-radius: 12px; border:1px solid #111827; background:#111827; color:#fff; cursor:pointer; }
+
+        .seg-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0 14px; }
+        .seg{ display:flex; background:#f3f4f6; padding:4px; border-radius:14px; border:1px solid #e5e7eb; }
+        .seg-btn{ border:0; background:transparent; padding:8px 12px; border-radius:12px; font-size:12px; color:#374151; cursor:pointer; font-weight:650; }
+        .seg-btn.active{ background:#111827; color:#fff; box-shadow:0 6px 18px rgba(17,24,39,0.12); }
+        #qPickList li .qStem{ display:block; font-size:12px; color:#6b7280; line-height:1.35; margin-top:4px; }
+
+
+        /* ===== Top Context Bar (does not affect center chat box) ===== */
+        .top-context { padding: 14px 18px 0; }
+        .top-context .ctx-bar {
+            max-width: 960px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .ctx-right {
+            margin-left: auto;
+        }
+        .top-context .kpi-grid { max-width: 960px; margin: 10px auto 0; }
+
+        /* ===== Manus-style panels under dialog ===== */
+        .role-dashboard { 
+            width: 100%; 
+            max-width: 960px; 
+            margin: 10px auto 20px; 
+            position: relative; 
+            z-index: 1; 
+        }
+
+
+
+
+        /* ===== Notification button (top-right) ===== */
+        .notif-btn{
+            position:fixed; top:14px; right:18px;
+            display:flex; align-items:center; gap:8px;
+            padding:8px 10px; border-radius:14px; border:1px solid #e5e7eb;
+            background:#fff; cursor:pointer; z-index:45;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+            font-size:13px; color:#111827; font-weight:650;
+        }
+        
+        /* 移除右侧margin，确保上下文栏居中 */
+        .top-context {
+            padding: 14px 18px 0;
+            margin-right: 0;
+        }
+        .notif-btn i{ font-size:18px; }
+        .notif-label{ line-height:1; }
+        .notif-badge{
+            margin-left:2px;
+            min-width:18px; height:18px; padding:0 6px;
+            border-radius:999px;
+            background:#ef4444; color:#fff;
+            display:inline-flex; align-items:center; justify-content:center;
+            font-size:11px; font-weight:800;
+            box-shadow: 0 6px 16px rgba(239,68,68,0.35);
+        }
+
+        /* ===== Right Todo Popover ===== */
+        .todo-popover { 
+            position: fixed; 
+            right: 20px; 
+            top: 80px; 
+            width: 280px; 
+            max-height: 300px; 
+            background: #fff; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+            overflow: hidden; 
+            z-index: 1000; 
+        }
+        .todo-popover.hidden { display: none; }
+        .todo-popover-hd { 
+            display:flex; 
+            align-items:center; 
+            justify-content:space-between; 
+            padding: 12px 16px 10px; 
+            border-bottom: 1px solid #f3f4f6; 
+        }
+        .todo-popover-title { 
+            font-size: 13px; 
+            font-weight: 700; 
+            color:#111827; 
+        }
+        .todo-popover-bd { 
+            padding: 10px 16px 12px; 
+            overflow:auto; 
+            max-height: calc(400px - 52px); 
+            font-size: 12px;
+        }
+        .todo-item {
+            font-size: 12px;
+        }
+        .todo-item-title {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .todo-item-desc {
+            font-size: 11px;
+        }
+        .todo-fab { position: absolute; right: 22px; bottom: 22px; z-index: 31; display:inline-flex; align-items:center; gap:8px; padding: 10px 12px; border-radius: 999px;
+                    border: 1px solid #e5e7eb; background:#fff; box-shadow: 0 10px 30px rgba(0,0,0,0.10); cursor:pointer; }
+        .todo-fab.hidden { display:none; }
+        .todo-fab span { display:inline-flex; min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--theme-bg); color: var(--theme-color); font-weight:700; font-size: 12px;
+                         align-items:center; justify-content:center; border: 1px solid rgba(0,0,0,0.06); }
+
+        /* Keep hero dialog centered */
+        .hero-layer { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 24px 18px; 
+            gap: 14px; 
+            background: #fff; 
+            z-index: 2; 
+            position: relative;
+        }
+        
+
+        .hero-title { text-align: center; }
+
+</style>
+</head>
+<body>
+
+    <div class="portal-scene" id="portalScene">
+        <div class="portal-header">
+            <div class="portal-logo">🔥</div>
+            <div class="portal-title">EduCore Space</div>
+            <div class="portal-subtitle">AI 驱动的全场景教育操作系统</div>
         </div>
 
         <div class="role-grid">
-          <div class="role-item" onclick="setRole('teacher')">
-            <div class="role-tag">教师端</div>
-            <div class="role-icon">👩‍🏫</div>
-            <div class="role-name">老师</div>
-            <div class="role-desc">备课 / 批改 / 学情联动（趋势-分层-异常）</div>
-          </div>
-
-          <div class="role-item" onclick="setRole('student')">
-            <div class="role-tag">学生端</div>
-            <div class="role-icon">🧑‍🎓</div>
-            <div class="role-name">学生</div>
-            <div class="role-desc">成长档案 / 即时答疑 / 错题巩固</div>
-          </div>
-
-          <div class="role-item" onclick="setRole('admin')">
-            <div class="role-tag">管理端</div>
-            <div class="role-icon">🏛️</div>
-            <div class="role-name">教育管理者</div>
-            <div class="role-desc">治理总览 / 风险预警 / 行为流督导</div>
-          </div>
+            <div class="role-card card-teacher" onclick="enterWorkspace('teacher')">
+                <div class="role-icon-lg"><i class="ri-briefcase-line"></i></div>
+                <div style="font-weight:600; font-size:18px;">教师工作台</div>
+                <div style="font-size:13px; color:#888; margin-top:8px;">AI 教案 · 作业 · 论文</div>
+            </div>
+            <div class="role-card card-student" onclick="enterWorkspace('student')">
+                <div class="role-icon-lg"><i class="ri-graduation-cap-line"></i></div>
+                <div style="font-weight:600; font-size:18px;">学生学习舱</div>
+                <div style="font-size:13px; color:#888; margin-top:8px;">错题 · 预习 · 陪练</div>
+            </div>
+            <div class="role-card card-parent" onclick="enterWorkspace('parent')">
+                <div class="role-icon-lg"><i class="ri-home-heart-line"></i></div>
+                <div style="font-weight:600; font-size:18px;">家校互通</div>
+                <div style="font-size:13px; color:#888; margin-top:8px;">周报 · 互通 · 教育</div>
+            </div>
+            <div class="role-card card-admin" onclick="enterWorkspace('admin')">
+                <div class="role-icon-lg"><i class="ri-government-line"></i></div>
+                <div style="font-weight:600; font-size:18px;">管理驾驶舱</div>
+                <div style="font-size:13px; color:#888; margin-top:8px;">安全 · 活动 · 食堂</div>
+            </div>
         </div>
-
-        <div class="role-foot">
-          <button class="btn btn-ghost" onclick="resetRole()">清除身份并重选</button>
-          <button class="btn btn-primary" onclick="setRole('teacher')">进入教师端</button>
-        </div>
-      </div>
     </div>
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="logo-area">
-        <div class="logo-mark">
-          <img
-            src="/assets/digital-human.svg"
-            alt="AI EduBrain"
-            style="width: 28px; height: 28px"
-          />
-        </div>
-        <div class="logo-text">
-          <div class="logo-title">AI EduBrain</div>
-          <div class="logo-sub">K12 教育智能体演示</div>
-        </div>
-        <div class="logo-badge" id="app-version">v0.9.2-role</div>
-      </div>
-<div class="nav-menu">
-  <div class="nav-item active" id="nav-portal" data-view="portal" onclick="switchView('portal', this)">
-    <div class="nav-icon">🏫</div>
-    AI智能门户
-  </div>
 
-  <div class="nav-item" id="nav-home" data-view="home" onclick="switchView('home', this)">
-    <div class="nav-icon">🏠</div>
-    首页入口
-  </div>
-
-  <div class="nav-item" id="nav-agents" data-view="agents" onclick="switchView('agents', this)">
-    <div class="nav-icon">🤖</div>
-    智能体中心
-  </div>
-
-  <div class="nav-item" id="nav-teacher" data-view="teacher" onclick="switchView('teacher', this)">
-    <div class="nav-icon">👩‍🏫</div>
-    教师工作台
-  </div>
-
-  <div class="nav-item" id="nav-student" data-view="student" onclick="switchView('student', this)">
-    <div class="nav-icon">🧑‍🎓</div>
-    学习伴侣
-  </div>
-
-  <div class="nav-item" id="nav-gov" data-view="gov" onclick="switchView('gov', this)">
-    <div class="nav-icon">🏛️</div>
-    治理驾驶舱
-  </div>
-
-  <div class="nav-item" id="nav-kb" data-view="kb" onclick="switchView('kb', this)">
-    <div class="nav-icon">📚</div>
-    知识库管理
-  </div>
-
-  <div style="margin-top: 10px; padding: 0 10px">
-    <button class="btn btn-ghost" style="width: 100%" onclick="resetRole()">
-      切换身份
-    </button>
-  </div>
-</div>
-
-<div class="user-profile">
-        <div class="avatar" id="user-avatar">李</div>
-        <div class="user-meta">
-          <div class="user-name" id="user-name">李老师</div>
-          <div class="user-sub" id="user-sub">数学组 · 七年级</div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main -->
-    <section class="main-content">
-      <header class="top-header" id="top-header">
-        <div class="breadcrumb">
-          工作区 / <span id="page-title">首页入口</span>
-        </div>
-
-        <div class="sys-status">
-          <span class="dot"></span>
-          <span>系统正常</span>
-        </div>
-      </header>
-
-      <div class="view-wrapper">
-        <!-- PORTAL -->
-<div class="view-container active" id="view-portal">
-  <div class="portal-hero">
-    <div class="portal-left">
-      <div class="portal-badge">AI智能门户 · 结构化服务入口 + 数字人咨询</div>
-      <h1>让家校协同与校务服务“找得到、问得清、办得成”</h1>
-      <p class="portal-desc">
-        以学校私有知识库为底座，面向家长/教师/管理者提供统一入口、智能问答与流程指引，并与教学与治理智能体联动。
-      </p>
-
-      <div class="portal-actions">
-        <button class="btn btn-primary" onclick="showRoleGate()">
-          进入演示系统（选择身份）
-        </button>
-        <button class="btn btn-ghost" onclick="switchView('agents', document.querySelector('[data-view=\'agents\']'))">
-          浏览智能体中心
-        </button>
-      </div>
-
-      <div class="portal-card-grid">
-        <div class="portal-card" onclick="portalGo('news')">
-          <div class="pc-title">校园动态</div>
-          <div class="pc-sub">通知公告 · 活动报名 · 校园要闻</div>
-        </div>
-        <div class="portal-card" onclick="portalGo('service')">
-          <div class="pc-title">办事指南</div>
-          <div class="pc-sub">入学报名 · 课后服务 · 校服/研学</div>
-        </div>
-        <div class="portal-card" onclick="portalGo('homeSchool')">
-          <div class="pc-title">家校沟通</div>
-          <div class="pc-sub">班级通知 · 家长会 · 学情解读</div>
-        </div>
-      </div>
-
-      <div class="portal-section card" id="portal-section">
-        <div class="section-title">今日推荐</div>
-        <div class="section-list">
-          <div class="section-item">本周家长会：周五 19:30 线上会议（点击查看入口与注意事项）</div>
-          <div class="section-item">课后服务选课：开放时间 09:00–18:00（点击查看操作步骤）</div>
-          <div class="section-item">寒假研学：报名截止 1 月 28 日（点击查看行程与缴费）</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="portal-right">
-      <div class="dh-card card">
-        <div class="dh-head">
-          <div class="dh-avatar">🧑‍💼</div>
-          <div class="dh-meta">
-            <div class="dh-title">学校数字人 · 智能咨询</div>
-            <div class="dh-sub">支持办事指南 / 校园动态 / 家校问题</div>
-          </div>
-        </div>
-
-        <div class="dh-chat" id="portal-chat">
-          <div class="dh-bubble ai">你好，我是学校智能助手。你可以问我：课后服务怎么选？入学报名需要什么材料？</div>
-        </div>
-
-        <div class="dh-suggest">
-          <button class="chip" onclick="portalAsk('怎么报名课后服务？')">课后服务怎么选？</button>
-          <button class="chip" onclick="portalAsk('入学报名需要哪些材料？')">入学报名材料</button>
-          <button class="chip" onclick="portalAsk('家长会时间和入口？')">家长会入口</button>
-          <button class="chip" onclick="portalAsk('校服如何订购？')">校服订购</button>
-        </div>
-
-        <div class="dh-input">
-          <input id="portal-input" placeholder="输入问题…（演示）" />
-          <button class="btn btn-primary" onclick="portalSend()">发送</button>
-        </div>
-      </div>
-
-      <div class="portal-mini card">
-        <div class="mini-title">与智能体联动</div>
-        <div class="mini-sub">示例：从“家校沟通”一键跳转到班主任智能体批量生成通知/评语。</div>
-        <button class="btn btn-ghost" style="width:100%" onclick="openAgent('homeroom')">打开班主任智能体</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-        <!-- HOME -->
-        <div class="view-container" id="view-home">
-          <div class="home-hero">
-            <h1>今天想做点什么？</h1>
-            <p>一句话直达入口：教师 / 学生 / 管理者 各 3 个核心场景</p>
-
-            <div class="home-search">
-              <input
-                id="home-input"
-                class="magic-input"
-                placeholder="输入：如「生成教案」「批改作业」「看趋势分层异常」「即时答疑」「错题巩固」「风险预警」"
-              />
-              <button class="btn btn-primary" onclick="startScenarioFromHome()">
-                进入
-              </button>
+    <div class="workspace-scene" id="workspaceScene">
+        
+        <div class="sidebar">
+            <div class="app-brand">
+                <span style="font-size:24px;">🔥</span> EduCore
+                <button class="sidebar-toggle-internal" onclick="toggleSidebar()">
+                    <i class="ri-menu-line"></i>
+                </button>
             </div>
 
-            <div class="home-role-tip" id="home-role-tip"></div>
+            <div class="user-badge" id="userBadge"></div>
 
-            <!-- 9 Cards (按角色隔离，只显示 3 张) -->
-            <div class="card-grid">
-              <!-- 教师端（3张） -->
-              <div class="feature-card" id="home-card-prep" onclick="startScenario('prep')">
-                <div class="tag">教师</div>
-                <div class="card-emoji">📘</div>
-                <h3>智能备课</h3>
-                <p>生成教案大纲 + 分层练习 + 薄弱点强化环节</p>
-              </div>
-
-              <div class="feature-card" id="home-card-mark" onclick="startScenario('mark')">
-                <div class="tag">教师</div>
-                <div class="card-emoji">📝</div>
-                <h3>作业批改</h3>
-                <p>模拟扫描 OCR + 异常识别 + 联动分析区</p>
-              </div>
-
-              <div class="feature-card" id="home-card-ana" onclick="startScenario('ana')">
-                <div class="tag">教师</div>
-                <div class="card-emoji">📊</div>
-                <h3>趋势分层异常</h3>
-                <p>7日趋势 → 分层分布 → 异常钻取（可查看学生档案）</p>
-              </div>
-
-              <!-- 学生端（3张） -->
-              <div class="feature-card" id="home-card-growth" onclick="enterStudent('growth')">
-                <div class="tag">学生</div>
-                <div class="card-emoji">📈</div>
-                <h3>成长档案</h3>
-                <p>能力对标 + 差距建议 + 周度复盘沉淀</p>
-              </div>
-
-              <div class="feature-card" id="home-card-qa" onclick="enterStudent('qa')">
-                <div class="tag">学生</div>
-                <div class="card-emoji">💬</div>
-                <h3>即时答疑</h3>
-                <p>分步讲解 + 知识点延伸 + 一键巩固</p>
-              </div>
-
-              <div class="feature-card" id="home-card-wrong" onclick="enterStudent('qa','wrongbook')">
-                <div class="tag">学生</div>
-                <div class="card-emoji">🧠</div>
-                <h3>错题巩固</h3>
-                <p>自动归档 + 分类复习 + 推送同类练习</p>
-              </div>
-
-              <!-- 管理端（3张） -->
-              <div class="feature-card" id="home-card-gov-overview" onclick="enterGov('overview')">
-                <div class="tag">管理</div>
-                <div class="card-emoji">🧭</div>
-                <h3>治理总览</h3>
-                <p>区校态势总览：活跃、作业量、掌握度、预警分布</p>
-              </div>
-
-              <div class="feature-card" id="home-card-gov-risk" onclick="enterGov('risk')">
-                <div class="tag">管理</div>
-                <div class="card-emoji">🚨</div>
-                <h3>风险预警</h3>
-                <p>异常聚合：缺交 / 错误率 / 作业量 / 薄弱点集中</p>
-              </div>
-
-              <div class="feature-card" id="home-card-gov-feed" onclick="enterGov('feed')">
-                <div class="tag">管理</div>
-                <div class="card-emoji">📡</div>
-                <h3>行为流督导</h3>
-                <p>教师教案/作业/档案查看行为实时流转与督导</p>
-              </div>
+            <div class="nav-item active" onclick="newChat()"><i class="ri-chat-3-line"></i> <span>新建对话</span></div>
+            <div class="nav-item"><i class="ri-history-line"></i> <span>历史会话</span></div>
+            <div class="nav-item"><i class="ri-book-open-line"></i> <span>知识库</span></div>
+            <div class="nav-item"><i class="ri-folder-3-line"></i> <span>我的文件</span></div>
+            <div class="nav-item" onclick="toggleTodoPopover()">
+                <i class="ri-notification-3-line"></i> <span>通知</span>
+                <span class="notif-badge hidden" id="notifBadge"></span>
             </div>
-          </div>
+
+            <div class="nav-item" style="margin-top:auto; color:#999;" onclick="exitWorkspace()">
+                <i class="ri-logout-box-line"></i> <span>切换身份</span>
+            </div>
         </div>
 
-        <!-- TEACHER -->
-        <div class="view-container" id="view-teacher">
-          <div class="teacher-toolbar">
-            <button id="btn-prep" class="btn btn-ghost" onclick="setTeacherMode('prep')">
-              📘 备课
+        <div class="main-content">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="ri-menu-line"></i>
             </button>
-            <button id="btn-mark" class="btn btn-ghost" onclick="setTeacherMode('mark')">
-              📝 批改
-            </button>
-            <button id="btn-ana" class="btn btn-primary" onclick="setTeacherMode('ana')">
-              📊 分析联动
-            </button>
+            <div class="top-context" id="topContextBar"></div>
 
-<button id="btn-research" class="btn btn-ghost" onclick="setTeacherMode('research')">
-  🧪 教研协同
-</button>
-<button id="btn-growth" class="btn btn-ghost" onclick="setTeacherMode('growth')">
-  🏅 职称成长
-</button>
+            
+            <div class="hero-layer" id="heroLayer">
+                <div class="hero-title" id="heroGreeting">Hello</div>
 
-            <div class="teacher-toolbar-right">
-              <div class="hint-badge">提示：趋势点位 / 分层卡片 / 异常列表均可联动钻取</div>
-            </div>
-          </div>
-
-          <div class="split-layout">
-            <!-- Left Panel: chat -->
-            <div class="panel">
-              <div class="panel-title">
-                <span>🧠 教师助手</span>
-                <span class="panel-sub">对话驱动</span>
-              </div>
-
-              <div class="chat-history" id="chat-box">
-                <div class="msg ai">
-                  <div class="msg-bubble">
-                    你可以输入：<b>“看趋势分层异常”</b> 或 <b>“生成分数应用题教案”</b> 或
-                    <b>“批改作业”</b> 来体验不同模式。
-                  </div>
+                <div class="input-box">
+                    <textarea id="mainInput" style="width:100%; border:none; outline:none; font-size:16px; resize:none; min-height:28px;" placeholder="输入需求..."></textarea>
+                    <div style="display:flex; justify-content:space-between; margin-top:16px; border-top:1px solid #f9f9f9; padding-top:12px;">
+                        <div style="display:flex; gap:12px; color:#9ca3af;">
+                            <i class="ri-attachment-2 cursor-pointer"></i>
+                            <i class="ri-image-line cursor-pointer"></i>
+                        </div>
+                        <i class="ri-arrow-up-circle-fill" style="font-size:32px; color:#e5e5e5; cursor:pointer; transition:0.2s;" onmouseover="this.style.color='#111'" onmouseout="this.style.color='#e5e5e5'" onclick="handleInput()"></i>
+                    </div>
                 </div>
-              </div>
 
-              <div class="chat-input">
-                <input
-                  id="teacher-input"
-                  placeholder="输入：生成教案 / 批改作业 / 看趋势分层异常..."
-                />
-                <button class="btn btn-primary" onclick="triggerMsg()">发送</button>
-              </div>
+                <div class="pill-container" id="pillContainer">
+                </div>
             </div>
 
-            <!-- Right Workspace -->
-            <div class="workspace">
-              <!-- PREP -->
-              <div class="workspace-view active" id="prep-view">
-                <div class="empty-state" id="prep-placeholder">
-                  <div class="empty-icon">📘</div>
-                  <div class="empty-title">备课工作区</div>
-                  <div class="empty-sub">输入“生成分数应用题教案”查看示例结果</div>
+            <div class="chat-layer" id="chatLayer">
+                <div class="chat-inner" id="chatContainer">
                 </div>
-
-                <div id="lesson-result" style="display: none"></div>
-              </div>
-
-              <!-- MARK -->
-              <div class="workspace-view" id="mark-view">
-                <div class="ocr-shell" onclick="runOCR()">
-                  <div class="ocr-tip" id="ocr-tip">点击模拟扫描（OCR）</div>
-
-                  <div class="paper-mock">
-                    <h3>作业样张</h3>
-                    <p>
-                      1) 20 ÷ 3/4 = ?<br />
-                      2) 线段图建模题：已知……<br />
-                      3) 变式题：条件变化……<br />
-                      4) 订正：请写出关键步骤……
-                    </p>
-
-                    <div
-                      class="error-spot"
-                      id="ocr-error"
-                      style="left: 56px; top: 210px"
-                    ></div>
-                  </div>
-
-                  <div class="scan-laser" id="ocr-laser"></div>
-                </div>
-
-                <div class="mark-tip">
-                  扫描完成后，会在当天画像生成异常，并自动切换到「分析联动」视图。
-                </div>
-              </div>
-
-              <!-- ANALYSIS -->
-              <div class="workspace-view" id="ana-view">
-                <div class="ana-grid">
-                  <!-- KPI -->
-                  <div class="ana-card kpi-card">
-                    <div class="kpi-top">
-                      <div>
-                        <div class="kpi-title">今日已批改</div>
-                        <div class="kpi-value" id="kpi-marked">16</div>
-                      </div>
-                      <div class="kpi-icon">📝</div>
-                    </div>
-                    <div class="kpi-sub">
-                      <span>共 32 份作业</span>
-                      <button class="btn btn-ghost btn-sm" onclick="openAnomalyDrawer()">
-                        查看异常汇总
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="ana-card kpi-card">
-                    <div class="kpi-top">
-                      <div>
-                        <div class="kpi-title">掌握度</div>
-                        <div class="kpi-value" id="kpi-mastery">73%</div>
-                      </div>
-                      <div class="kpi-icon">📈</div>
-                    </div>
-                    <div class="kpi-sub">
-                      <span>7日趋势联动</span>
-                      <span id="trend-day-label">周日</span>
-                    </div>
-                  </div>
-
-                  <div class="ana-card kpi-card">
-                    <div class="kpi-top">
-                      <div>
-                        <div class="kpi-title">异常条目</div>
-                        <div class="kpi-value" id="kpi-anomaly">2</div>
-                      </div>
-                      <div class="kpi-icon">⚠️</div>
-                    </div>
-                    <div class="kpi-sub">
-                      <span>可钻取到学生档案</span>
-                      <span id="trend-value-label">73%</span>
-                    </div>
-                  </div>
-
-                  <!-- Trend Chart -->
-                  <div class="ana-card chart-card">
-                    <div class="card-head">
-                      <div>
-                        <div class="card-title">📊 7日掌握度趋势</div>
-                        <div class="card-sub">点击点位 → 联动刷新分层与异常</div>
-                      </div>
-                    </div>
-                    <canvas
-                      id="trend-canvas"
-                      width="860"
-                      height="240"
-                      style="width: 100%; height: 240px"
-                    ></canvas>
-                  </div>
-
-                  <!-- Tier -->
-                  <div class="ana-card tier-card">
-                    <div class="card-head">
-                      <div>
-                        <div class="card-title">🧩 分层分布</div>
-                        <div class="card-sub">点击 A/B/C 聚焦联动异常</div>
-                      </div>
-                    </div>
-
-                    <div class="tier-list">
-                      <div class="tier-row" onclick="selectTier('A')">
-                        <div class="tier-left">
-                          <div class="tier-badge A">A</div>
-                          <div>
-                            <div class="tier-name">A 组</div>
-                            <div class="tier-desc">拔高训练</div>
-                          </div>
-                        </div>
-                        <div class="tier-right">
-                          <div class="tier-num"><span id="tier-a-count">9</span> 人</div>
-                          <div class="tier-rate" id="tier-a-rate">28%</div>
-                        </div>
-                      </div>
-                      <div class="tier-bar">
-                        <div class="tier-bar-inner A" id="tier-a-bar"></div>
-                      </div>
-
-                      <div class="tier-row" onclick="selectTier('B')">
-                        <div class="tier-left">
-                          <div class="tier-badge B">B</div>
-                          <div>
-                            <div class="tier-name">B 组</div>
-                            <div class="tier-desc">稳态提升</div>
-                          </div>
-                        </div>
-                        <div class="tier-right">
-                          <div class="tier-num"><span id="tier-b-count">14</span> 人</div>
-                          <div class="tier-rate" id="tier-b-rate">44%</div>
-                        </div>
-                      </div>
-                      <div class="tier-bar">
-                        <div class="tier-bar-inner B" id="tier-b-bar"></div>
-                      </div>
-
-                      <div class="tier-row" onclick="selectTier('C')">
-                        <div class="tier-left">
-                          <div class="tier-badge C">C</div>
-                          <div>
-                            <div class="tier-name">C 组</div>
-                            <div class="tier-desc">补救优先</div>
-                          </div>
-                        </div>
-                        <div class="tier-right">
-                          <div class="tier-num"><span id="tier-c-count">9</span> 人</div>
-                          <div class="tier-rate" id="tier-c-rate">28%</div>
-                        </div>
-                      </div>
-                      <div class="tier-bar">
-                        <div class="tier-bar-inner C" id="tier-c-bar"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Anomaly -->
-                  <div class="ana-card anomaly-card">
-                    <div class="card-head">
-                      <div>
-                        <div class="card-title">🚨 异常钻取</div>
-                        <div class="card-sub">
-                          点击异常 → 弹窗内查看学生成长档案（教师侧不跳学生端）
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="chip-row">
-                      <div class="chip active" onclick="setAnomalyFilter('all', this)">全部</div>
-                      <div class="chip" onclick="setAnomalyFilter('missing', this)">缺交</div>
-                      <div class="chip" onclick="setAnomalyFilter('error', this)">错误率</div>
-                      <div class="chip" onclick="setAnomalyFilter('time', this)">时长</div>
-                    </div>
-
-                    <div class="anomaly-list" id="anomaly-list"></div>
-                  </div>
-                </div>
-              </div>
             </div>
 
-<!-- RESEARCH -->
-<div class="workspace-view" id="research-view">
-  <div class="empty-state" id="research-placeholder">
-    <div class="empty-icon">🧪</div>
-    <div class="empty-title">教研协同工作区</div>
-    <div class="empty-sub">课题管理 / 成果共享 / 授课视频分析（行为数据化复盘）</div>
-  </div>
+            <div class="role-dashboard" id="roleDashboard" style="display:none;"></div>
 
-  <div id="research-root" class="workspace-scroll" style="display: none"></div>
-</div>
-
-<!-- GROWTH -->
-<div class="workspace-view" id="growth-view">
-  <div class="empty-state" id="growth-placeholder">
-    <div class="empty-icon">🏅</div>
-    <div class="empty-title">职称与成长工作区</div>
-    <div class="empty-sub">职称晋升材料智能梳理 / 名师工作联动（经验沉淀与资源共享）</div>
-  </div>
-
-  <div id="growth-root" class="workspace-scroll" style="display: none"></div>
-</div>
-            <!-- /workspace -->
-          </div>
+            <!-- Right Todo Popover (Manus-style) -->
+            <div class="todo-popover hidden" id="todoPopover">
+                <div class="todo-popover-hd">
+                    <div class="todo-popover-title">通知</div>
+                    <div class="todo-popover-actions">
+                        <button class="mini-btn" onclick="snoozeTodo()">稍后</button>
+                    </div>
+                </div>
+                <div class="todo-popover-bd" id="todoPopoverList"></div>
+            </div>
+<div class="toast-stack" id="toastStack"></div>
         </div>
-
-        <!-- STUDENT -->
-        <div class="view-container" id="view-student">
-          <div class="student-top">
-            <div>
-              <div class="student-title">学习伴侣</div>
-              <div class="student-sub">成长档案 / 学习计划 / 即时答疑</div>
-            </div>
-
-            <div class="student-top-right">
-              <div class="student-select">
-                <span class="label">学生：</span>
-                <select id="student-select" onchange="onStudentChange(this.value)">
-                  <option value="S-01">宋扬（S-01）</option>
-                  <option value="S-02">高航（S-02）</option>
-                  <option value="S-04">王铭（S-04）</option>
-                  <option value="S-06">周一帆（S-06）</option>
-                </select>
-              </div>
-
-              <div class="streak-pill">
-                连续打卡 <span id="student-streak">12</span> 天
-              </div>
-            </div>
-          </div>
-
-          <div class="student-tabs">
-            <div class="tab-btn active" id="tab-growth" onclick="setStudentTab('growth')">
-              📈 成长档案
-            </div>
-            <div class="tab-btn" id="tab-qa" onclick="setStudentTab('qa')">
-              💬 即时答疑
-            </div>
-          </div>
-
-          <!-- Growth -->
-          <div class="student-page active" id="student-growth">
-            <div class="student-grid">
-              <!-- Radar -->
-              <div class="student-card">
-                <div style="font-weight: 1000">能力雷达</div>
-                <div class="radar-wrap">
-                  <canvas id="radar-canvas" width="320" height="240"></canvas>
-                  <div class="radar-legend">
-                    <div class="legend-item"><span class="dot dot-a"></span> 当前</div>
-                    <div class="legend-item"><span class="dot dot-b"></span> 目标</div>
-                  </div>
-                </div>
-
-                <div class="gap-box">
-                  <div class="gap-title">差距建议（可执行）</div>
-                  <ul class="gap-list" id="gap-list"></ul>
-                </div>
-              </div>
-
-              <!-- Weekly -->
-              <div class="student-card">
-                <div style="font-weight: 1000">本周趋势</div>
-
-                <div class="week-kpis">
-                  <div class="wk">
-                    <div class="wk-l">最新掌握度</div>
-                    <div class="wk-v" id="wk-mastery">76%</div>
-                  </div>
-                  <div class="wk">
-                    <div class="wk-l">错题总量</div>
-                    <div class="wk-v" id="wk-wrong">18</div>
-                  </div>
-                  <div class="wk">
-                    <div class="wk-l">学习时长</div>
-                    <div class="wk-v" id="wk-min">120</div>
-                  </div>
-                </div>
-
-                <canvas id="week-canvas" width="520" height="240"></canvas>
-
-                <div class="student-actions">
-                  <button class="btn btn-primary" onclick="generateWeeklyReview()">生成周度复盘</button>
-                  <button class="btn btn-ghost" onclick="recommendResources()">推荐学习资源</button>
-                  <button class="btn btn-ghost" onclick="askArchive()">查询档案总结</button>
-                </div>
-
-                <div class="resource-row" id="resource-row"></div>
-              </div>
-
-              <!-- Archive -->
-              <div class="student-card">
-                <div style="font-weight: 1000">成长档案沉淀</div>
-                <div class="archive-list" id="archive-list"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- QA -->
-          <div class="student-page" id="student-qa">
-            <div class="qa-layout">
-              <div class="qa-card">
-                <div style="font-weight: 1000">即时答疑</div>
-
-                <div class="qa-chat" id="qa-chat">
-                  <div class="qa-msg ai">
-                    <div class="qa-bubble">
-                      你可以直接发题目，我会分步讲解并把错题归档到错题本。
-                    </div>
-                  </div>
-                </div>
-
-                <div class="qa-input">
-                  <input id="qa-input" placeholder="输入问题：如 20 ÷ 3/4 怎么算？" />
-                  <button class="btn btn-primary" onclick="sendQA()">发送</button>
-                </div>
-
-                <div class="qa-suggest">
-                  <div class="qa-chip" onclick="quickAsk('20 ÷ 3/4 怎么算？')">20 ÷ 3/4</div>
-                  <div class="qa-chip" onclick="quickAsk('单位1怎么找？')">单位1怎么找</div>
-                  <div class="qa-chip" onclick="quickAsk('帮我改作文更通顺')">改作文通顺</div>
-                </div>
-              </div>
-
-              <div class="qa-side">
-                <div class="student-card">
-                  <div style="font-weight: 1000">错题本</div>
-                  <div class="wrongbook" id="wrongbook"></div>
-                </div>
-
-                <div class="student-card">
-                  <div style="font-weight: 1000">扩展推荐</div>
-                  <div class="extend-reco" id="extend-reco"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- GOV -->
-        <div class="view-container gov-container" id="view-gov">
-          <div class="gov-overlay">
-            <div>
-              <h2>治理驾驶舱（示例）</h2>
-              <div style="opacity: 0.75; font-size: 12px">区校态势 · 风险预警 · 活跃行为流</div>
-            </div>
-
-            <div class="gov-metric">
-              <div class="gov-metric-value">+12%</div>
-              <div class="gov-metric-label">本周活跃度</div>
-            </div>
-          </div>
-
-          <div class="map-stage">
-            <div class="map-grid" id="map-grid"></div>
-          </div>
-
-          <div class="live-feed">
-            <div class="feed-title">实时行为流</div>
-            <div id="feed-list"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Modal -->
-    <div id="modal" class="modal" style="display: none">
-      <div class="modal-mask" onclick="closeModal()"></div>
-      <div class="modal-card">
-        <div class="modal-head">
-          <div class="modal-title" id="modal-title">弹窗</div>
-          <button class="btn btn-ghost btn-sm" onclick="closeModal()">关闭</button>
-        </div>
-        <div class="modal-body" id="modal-body"></div>
-        <div class="modal-foot">
-          <button class="btn btn-primary btn-sm" onclick="closeModal()">完成</button>
-        </div>
-      </div>
     </div>
 
-    <!-- JS -->
-    <!-- AGENTS -->
-<div class="view-container" id="view-agents">
-  <div class="agents-head">
-    <h1>智能体中心</h1>
-    <p>按角色与场景快速选择可用智能体（含市级特供示例）。</p>
+    <script>
+        // === 1. 数据配置 (包含所有场景的预设) ===
+        const CONFIG = {
+            teacher: {
+                name: "林老师", role: "数学教研组", color: "#f97316", bg: "#fff7ed",
+                greeting: "林老师，今天重点处理什么？",
+                placeholder: "输入指令，如：生成《勾股定理》教案...",
+                pills: [
+                    { icon: "ri-file-text-line", text: "AI 教案生成", action: "teacher_lesson" },
+                    { icon: "ri-pie-chart-line", text: "作业数据分析", action: "teacher_homework" },
+                    { icon: "ri-article-line", text: "AI 教学论文辅助", action: "teacher_paper" }
+                ]
+            },
+            student: {
+                name: "李同学", role: "初二(3)班", color: "#3b82f6", bg: "#eff6ff",
+                greeting: "李同学，开始今天的进步之旅！",
+                placeholder: "拍照上传错题，或开始英语对话...",
+                pills: [
+                    { icon: "ri-camera-lens-line", text: "错题智能诊断", action: "student_mistake" },
+                    { icon: "ri-translate-2", text: "英语口语陪练", action: "student_english" },
+                    { icon: "ri-book-read-line", text: "分学段预习计划", action: "student_preview" }
+                ]
+            },
+            parent: {
+                name: "李明家长", role: "家长端", color: "#10b981", bg: "#ecfdf5",
+                greeting: "您好，了解孩子成长的每一刻。",
+                placeholder: "查询周报，或了解在校情况...",
+                pills: [
+                    { icon: "ri-line-chart-line", text: "成长周报", action: "parent_report" },
+                    { icon: "ri-message-2-line", text: "家校 AI 互通", action: "parent_connect" },
+                    { icon: "ri-parent-line", text: "家庭教育指导", action: "parent_edu" }
+                ]
+            },
+            admin: {
+                name: "教务主任", role: "管理端", color: "#ef4444", bg: "#fef2f2",
+                greeting: "管理驾驶舱运行中。",
+                placeholder: "查询校园安全或活动策划...",
+                pills: [
+                    { icon: "ri-alarm-warning-line", text: "校园安全监测", action: "admin_safety" },
+                    { icon: "ri-calendar-event-line", text: "文化活动策划", action: "admin_activity" },
+                    { icon: "ri-restaurant-line", text: "食堂智能管理", action: "admin_canteen" }
+                ]
+            }
+        };
 
-    <div class="agents-tools">
-      <input id="agents-search" class="magic-input" placeholder="搜索：教案、评语、项目式、课件、门户…" oninput="renderAgents()" />
-      <div class="agents-tags" id="agents-tags"></div>
+        let currentRole = null;
+
+        // === 1.1 链路A：任务与上下文状态 ===
+        const APP_STATE = {
+            tasks: { teacher: [], student: [], parent: [], admin: [] },
+            todoSnoozed: false,
+            adminGranularity: 'week',
+            // roster/children for multi-entity demo realism
+            roster: [
+                { id: "s01", name: "李明", className: "初二(3)班" },
+                { id: "s02", name: "张伟", className: "初二(3)班" },
+                { id: "s03", name: "王芳", className: "初二(3)班" },
+                { id: "s04", name: "陈浩", className: "初二(3)班" }
+            ],
+            currentStudentId: "s01",
+            children: [
+                { id: "c01", name: "李明", className: "初二(3)班" }
+            ],
+            currentChildId: "c01",
+            pendingCtx: null,
+            lastHomeworkInsight: null,
+            lastStudentResult: null,
+            adminAnalytics: {
+                // 7天趋势：薄弱点热度（用于驾驶舱趋势展示）
+                weakPointTrend: {
+                    "一次函数截距": [8,9,10,12,13,14,15],
+                    "用点求一次函数解析式": [5,5,6,7,7,8,8],
+                    "一次函数图像与截距关系": [4,4,5,6,6,6,7]
+                },
+                // 班级对比：完成率/掌握率（演示）
+                classCompare: [
+                    { className: "初二(1)班", completion: 0.78, mastery: 0.74 },
+                    { className: "初二(2)班", completion: 0.71, mastery: 0.69 },
+                    { className: "初二(3)班", completion: 0.65, mastery: 0.66 },
+                    { className: "初二(4)班", completion: 0.73, mastery: 0.71 }
+                ]
+            }};
+
+        function uid(prefix="t") {
+            return prefix + "_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+        }
+
+        function showToast(title, desc, actions=[]) {
+            const stack = document.getElementById('toastStack');
+            if (!stack) return;
+            const id = uid("toast");
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.id = id;
+            el.innerHTML = `
+                <div class="toast-title">${title}</div>
+                <div class="toast-desc">${desc || ""}</div>
+                <div class="toast-actions" id="${id}_actions"></div>
+            `;
+            stack.appendChild(el);
+            const actionBox = document.getElementById(id + "_actions");
+            actions.forEach(a => {
+                const btn = document.createElement('button');
+                btn.className = a.primary ? "primary" : "";
+                btn.innerText = a.label;
+                btn.onclick = () => { try { a.onClick && a.onClick(); } finally { removeToast(id); } };
+                actionBox.appendChild(btn);
+            });
+            setTimeout(() => removeToast(id), 4200);
+        }
+
+        function removeToast(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function addTask(role, task) {
+            APP_STATE.tasks[role] = APP_STATE.tasks[role] || [];
+            APP_STATE.tasks[role].unshift(task);
+            renderTodos();
+        }
+
+        function completeTask(role, taskId) {
+            const list = APP_STATE.tasks[role] || [];
+            const t = list.find(x => x.id === taskId);
+            if (t) t.status = "done";
+            renderTodos();
+        }
+
+        function getActiveTasks(role) {
+            let list = (APP_STATE.tasks[role] || []).filter(t => t.status !== "done");
+            if (role === "student") {
+                const sid = APP_STATE.currentStudentId;
+                list = list.filter(t => !t.studentId || t.studentId === sid);
+            }
+            if (role === "parent") {
+                const cid = APP_STATE.currentChildId;
+                list = list.filter(t => !t.childId || t.childId === cid);
+            }
+            return list;
+        }
+
+        
+        function renderTodos() {
+            const role = currentRole;
+            if (!role) return;
+
+            const active = getActiveTasks(role);
+
+            // Right popover list
+            const listEl = document.getElementById('todoPopoverList');
+            if (listEl) {
+                listEl.innerHTML = "";
+                if (active.length === 0) {
+                    listEl.innerHTML = `<div style="font-size:12px; color:#9ca3af; padding:6px 2px;">暂无待办</div>`;
+                } else {
+                    active.slice(0, 10).forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'todo-item';
+                        item.onclick = () => openTask(t.id);
+                        item.innerHTML = `
+                            <div class="todo-item-top">
+                                <div class="todo-item-title">${t.title}</div>
+                                <div class="todo-item-badge">${t.badge||"待处理"}</div>
+                            </div>
+                            <div class="todo-item-sub">${t.desc||""}</div>
+                        `;
+                        listEl.appendChild(item);
+                    });
+                }
+            }
+
+            // Notification badge
+            const badgeEl = document.getElementById("notifBadge");
+            if (badgeEl){
+                const n = active.length;
+                if (n > 0){
+                    badgeEl.textContent = String(n);
+                    badgeEl.classList.remove('hidden');
+                    badgeEl.style.display = "flex";
+                } else {
+                    badgeEl.textContent = "";
+                    badgeEl.classList.add('hidden');
+                    badgeEl.style.display = "none";
+                }
+            }
+
+            // Default behavior: if has tasks and not snoozed, show popover; else hide
+            const pop = document.getElementById('todoPopover');
+            if (pop){
+                if (active.length > 0 && !APP_STATE.todoSnoozed){
+                    pop.classList.remove('hidden');
+                } else {
+                    pop.classList.add('hidden');
+                }
+            }
+        }
+
+
+        function dismissTask(taskId) {
+            // 简单策略：把任务移到末尾
+            const role = currentRole;
+            const list = APP_STATE.tasks[role] || [];
+            const idx = list.findIndex(x => x.id === taskId);
+            if (idx >= 0) {
+                const [t] = list.splice(idx, 1);
+                list.push(t);
+                renderTodos();
+            }
+        }
+
+        function findTask(taskId) {
+            const list = APP_STATE.tasks[currentRole] || [];
+            return list.find(t => t.id === taskId);
+        }
+
+        renderRoleDashboard();
+
+        function openTask(taskId) {
+            const t = findTask(taskId);
+            if (!t) return;
+            APP_STATE.pendingCtx = t.payload || null;
+
+            // 重置到输入态，保证演示顺滑
+            document.getElementById('chatContainer').innerHTML = "";
+            document.getElementById('heroLayer').classList.remove('hidden');
+            document.getElementById('chatLayer').style.display = 'none';
+
+            const input = document.getElementById('mainInput');
+            input.value = t.suggestedPrompt || (t.desc || "执行任务...");
+            handleInput(t.scenario);
+
+            // 默认：任务进入处理态（保持可重复打开也OK）
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function newChat(){
+            // 新建对话：回到输入态（保留角色与上下文）
+            document.getElementById('chatContainer').innerHTML = "";
+            document.getElementById('heroLayer').classList.remove('hidden');
+            document.getElementById('chatLayer').style.display = 'none';
+            
+            // 显示KPI、重要通知和建议
+            document.getElementById('topContextBar').style.display = 'block';
+            document.getElementById('roleDashboard').style.display = 'block';
+            
+            const input = document.getElementById('mainInput');
+            if (input){ input.value = ""; input.focus(); }
+        }
+
+        
+        function setAdminGranularity(g){
+            APP_STATE.adminGranularity = g;
+            const ids = {today:"segToday", week:"segWeek", month:"segMonth"};
+            ["segToday","segWeek","segMonth"].forEach(id=>{ const b=document.getElementById(id); if(b) b.classList.remove("active"); });
+            const activeId = ids[g] || "segWeek";
+            const ab = document.getElementById(activeId); if (ab) ab.classList.add("active");
+
+            // 轻量模拟：不同粒度下 KPI 略有变化
+            const map = {
+                today: {att:"97.1%", risk:"1", can:"4.7", tasks:"6"},
+                week:  {att:"97.6%", risk:"2", can:"4.6", tasks:"14"},
+                month: {att:"97.3%", risk:"5", can:"4.5", tasks:"41"}
+            };
+            const v = map[g] || map.week;
+            const a=document.getElementById("kpiAttendance"); if(a) a.textContent=v.att;
+            const r=document.getElementById("kpiRisk"); if(r) r.textContent=v.risk;
+            const c=document.getElementById("kpiCanteen"); if(c) c.textContent=v.can;
+            const t=document.getElementById("kpiTasks"); if(t) t.textContent=v.tasks;
+        }
+
+function openTodoPopover(){
+            const pop = document.getElementById('todoPopover');
+            const fab = document.getElementById('todoFab');
+            APP_STATE.todoSnoozed = false;
+            if (pop){ pop.classList.remove('hidden'); }
+            if (fab){ fab.classList.add('hidden'); }
+        }
+
+        function toggleTodoPopover(){
+            const pop = document.getElementById('todoPopover');
+            if (!pop) return;
+            // 如果已稍后，则点击铃铛也会重新打开并取消稍后
+            if (APP_STATE.todoSnoozed) APP_STATE.todoSnoozed = false;
+            if (pop.classList.contains('hidden')) pop.classList.remove('hidden');
+            else pop.classList.add('hidden');
+        }
+
+        function snoozeTodo(){
+            const pop = document.getElementById('todoPopover');
+            const fab = document.getElementById('todoFab');
+            APP_STATE.todoSnoozed = true;
+            if (pop){ pop.classList.add('hidden'); }
+            if (fab){ fab.classList.remove('hidden'); }
+        }
+
+
+        function switchRole(role) {
+            // 在工作区内快速切换身份：清空对话、刷新主题与待办
+            if (!CONFIG[role]) return;
+            enterWorkspace(role);
+            APP_STATE.todoSnoozed = false;
+
+            // 清理输入/对话，回到 Hero
+            document.getElementById('chatContainer').innerHTML = "";
+            document.getElementById('heroLayer').classList.remove('hidden');
+            document.getElementById('chatLayer').style.display = 'none';
+            document.getElementById('mainInput').value = "";
+
+            showToast("身份已切换", `当前身份：${CONFIG[role].role} · ${CONFIG[role].name}`);
+            renderTodos();
+        }
+
+        // 统一的“发起跨角色任务”能力（链路A核心）
+        
+        // === 1.2 更贴近真实的“角色概览/上下文条” ===
+        function getStudentById(id){
+            return (APP_STATE.roster || []).find(s => s.id === id) || APP_STATE.roster[0];
+        }
+        function getChildById(id){
+            return (APP_STATE.children || []).find(c => c.id === id) || APP_STATE.children[0];
+        }
+
+        // ====== 教学治理模拟统计：薄弱点趋势 & 班级对比（用于管理端驾驶舱） ======
+        function bumpSeries(arr, delta=1){
+            // 7天滚动：丢掉最早一天，最后一天加权增长
+            const a = (arr || [0,0,0,0,0,0,0]).slice(-7);
+            while (a.length<7) a.unshift(0);
+            a.shift();
+            const last = a[a.length-1] || 0;
+            a.push(Math.max(0, Math.round(last + delta)));
+            return a;
+        }
+
+        function updateAdminAnalyticsOnPush(mode, selection, studentIds, className){
+            const ana = APP_STATE.adminAnalytics || (APP_STATE.adminAnalytics = { weakPointTrend:{}, classCompare:[] });
+
+            // 薄弱点：按知识点/错因/题目订正都归一到“知识点”热度上（演示口径）
+            let focusKps = [];
+            if (mode === "kp") focusKps = (selection.items || []);
+            else if (mode === "tag") focusKps = [APP_STATE.lastHomeworkInsight?.kp || "一次函数截距"];
+            else {
+                const qs = (selection.questions || []);
+                focusKps = Array.from(new Set(qs.map(q=>q.kp))).filter(Boolean);
+                if (focusKps.length===0) focusKps = [APP_STATE.lastHomeworkInsight?.kp || "一次函数截距"];
+            }
+
+            focusKps.forEach(kp=>{
+                const prev = ana.weakPointTrend[kp] || [3,3,4,4,5,5,6];
+                // 推送越多人，热度越高
+                const delta = Math.min(6, Math.max(2, Math.round((studentIds?.length||1) * 0.8)));
+                ana.weakPointTrend[kp] = bumpSeries(prev, delta);
+            });
+
+            // 班级对比：推送越多 -> 完成率短期下降一点（任务增加），掌握率缓慢改善（留到学生完成回传时再拉高）
+            ana.classCompare = (ana.classCompare || []);
+            const target = ana.classCompare.find(x=>x.className===className);
+            if (target){
+                target.completion = Math.max(0.45, Math.min(0.95, (target.completion || 0.7) - 0.02));
+            }
+
+            APP_STATE.adminAnalytics = ana;
+        }
+
+        function updateAdminAnalyticsOnReturn(className, masteryLift=0.03){
+            const ana = APP_STATE.adminAnalytics || (APP_STATE.adminAnalytics = { weakPointTrend:{}, classCompare:[] });
+            const target = (ana.classCompare || []).find(x=>x.className===className);
+            if (target){
+                target.completion = Math.max(0.45, Math.min(0.98, (target.completion || 0.7) + 0.04));
+                target.mastery = Math.max(0.45, Math.min(0.98, (target.mastery || 0.7) + masteryLift));
+            }
+            APP_STATE.adminAnalytics = ana;
+        }
+
+        function renderSparkline(values){
+            const vals = (values || []).slice(-7);
+            const w=180, h=44, pad=6;
+            const min = Math.min(...vals);
+            const max = Math.max(...vals);
+            const span = Math.max(1e-6, max-min);
+            const pts = vals.map((v,i)=>{
+                const x = pad + i*( (w-2*pad)/(vals.length-1 || 1) );
+                const y = pad + (h-2*pad) * (1 - (v-min)/span);
+                return [x,y];
+            });
+            const d = pts.map((p,i)=> (i===0?`M ${p[0].toFixed(1)} ${p[1].toFixed(1)}`:`L ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)).join(" ");
+            return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
+                        <path d="${d}" fill="none" stroke="#111827" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        ${pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.3" fill="#111827"></circle>`).join("")}
+                    </svg>`;
+        }
+
+
+
+        
+        function renderRoleDashboard(){
+            const panelEl = document.getElementById("roleDashboard");
+            const topEl = document.getElementById("topContextBar");
+            if (!panelEl) return;
+
+            if (!currentRole){
+                panelEl.style.display="none";
+                if (topEl){ topEl.style.display="none"; topEl.innerHTML=""; }
+                return;
+            }
+
+            // 对所有角色做“深度优化”，包括教师端
+            const deepRoles = ["student","parent","admin","teacher"];
+            if (!deepRoles.includes(currentRole)) {
+                panelEl.style.display = "none";
+                if (topEl){ topEl.style.display="none"; topEl.innerHTML=""; }
+                return;
+            }
+
+            const now = new Date();
+            const y = now.getFullYear(), mo = String(now.getMonth()+1).padStart(2,"0"), d = String(now.getDate()).padStart(2,"0");
+            const dateStr = `${y}-${mo}-${d}`;
+            const dataPill = currentRole==="admin" ? "数据：校级汇总(5m延迟)" : "数据：班级(实时)";
+
+            // ========== Top Context (lightweight, does not push center dialog) ==========
+            if (topEl){
+                topEl.style.display = "block";
+                if (currentRole === "student"){
+                    const stu = getStudentById(APP_STATE.currentStudentId);
+                    topEl.innerHTML = `
+                        <div class="ctx-bar">
+                            <div class="ctx-left">
+                                <span class="ctx-pill"><i class="ri-user-3-line"></i> 学生：
+                                    <select onchange="changeStudent(this.value)">
+                                        ${(APP_STATE.roster||[]).map(s=>`<option value="${s.id}" ${s.id===stu.id?"selected":""}>${s.name}</option>`).join("")}
+                                    </select>
+                                </span>
+                                <span class="ctx-pill"><i class="ri-community-line"></i> 班级：${stu.className}</span>
+                                <span class="ctx-pill"><i class="ri-calendar-line"></i> 日期：${dateStr}</span>
+                                <span class="ctx-pill"><i class="ri-database-2-line"></i> ${dataPill}</span>
+                            </div>
+                            <div class="ctx-right">
+                                <button class="mini-btn primary" onclick="quickStudentStart()">开始今日任务</button>
+                                <button class="mini-btn" onclick="handleInput('student_preview')">生成今日学习计划</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (currentRole === "parent"){
+                    const stu = getStudentById(APP_STATE.currentStudentId);
+                    topEl.innerHTML = `
+                        <div class="ctx-bar">
+                            <div class="ctx-left">
+                                <span class="ctx-pill"><i class="ri-user-3-line"></i> 孩子：${stu.name}（${stu.className}）</span>
+                                <span class="ctx-pill"><i class="ri-calendar-line"></i> 日期：${dateStr}</span>
+                                <span class="ctx-pill"><i class="ri-database-2-line"></i> 数据：学业+行为(实时)</span>
+                            </div>
+                            <div class="ctx-right">
+                                <button class="mini-btn primary" onclick="handleInput('parent_report')">生成成长周报</button>
+                                <button class="mini-btn" onclick="handleInput('parent_talk')">生成沟通单</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (currentRole === "admin"){
+                    topEl.innerHTML = `
+                        <div class="ctx-bar">
+                            <div class="ctx-left">
+                                <span class="ctx-pill"><i class="ri-shield-check-line"></i> 治理驾驶舱</span>
+                                <span class="ctx-pill"><i class="ri-calendar-line"></i> 日期：${dateStr}</span>
+                                <span class="ctx-pill"><i class="ri-database-2-line"></i> ${dataPill}</span>
+                            </div>
+                            <div class="ctx-right">
+                                <button class="mini-btn primary" onclick="handleInput('admin_dashboard')">打开本周总览</button>
+                                <button class="mini-btn" onclick="handleInput('admin_risk')">生成风险处置建议</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (currentRole === "teacher"){
+                    topEl.innerHTML = `
+                        <div class="ctx-bar">
+                            <div class="ctx-left">
+                                <span class="ctx-pill"><i class="ri-user-3-line"></i> 教师：林老师</span>
+                                <span class="ctx-pill"><i class="ri-community-line"></i> 班级：初二(3)班</span>
+                                <span class="ctx-pill"><i class="ri-calendar-line"></i> 日期：${dateStr}</span>
+                                <span class="ctx-pill"><i class="ri-database-2-line"></i> 数据：班级学情(实时)</span>
+                            </div>
+                            <div class="ctx-right">
+                                <button class="mini-btn primary" onclick="handleInput('teacher_homework')">打开作业分析</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // ========== Panels under dialog (Manus-style) ==========
+            panelEl.style.display = "block";
+            if (currentRole === "admin") { setTimeout(()=>setAdminGranularity(APP_STATE.adminGranularity||"week"), 0); }
+
+            if (currentRole === "student") {
+                panelEl.innerHTML = `
+                    
+                    <div class="kpi-grid">
+                        <div class="kpi"><div class="kpi-val">92%</div><div class="kpi-lbl">作业完成率（7天）</div></div>
+                        <div class="kpi"><div class="kpi-val">3</div><div class="kpi-lbl">待处理通知</div></div>
+                        <div class="kpi"><div class="kpi-val">45min</div><div class="kpi-lbl">今日预计学习</div></div>
+                        <div class="kpi"><div class="kpi-val">86</div><div class="kpi-lbl">口语评分（近7天）</div></div>
+                    </div>
+
+                    <div class="below-panels">
+                        <div class="panel">
+                            <div class="panel-hd"><span>老师通知</span><span style="font-size:12px; color:#6b7280;">近 24h</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">数学：一次函数截距错因纠正（重点）</div>
+                                        <div class="sub">来自：林老师 · 建议先做“同类题递进”再看讲评</div>
+                                    </div>
+                                    <button class="mini-btn primary" onclick="openTopTask()">立即处理</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">英语：周五口语打卡</div>
+                                        <div class="sub">内容：自我介绍 + 复述短文（2分钟）</div>
+                                    </div>
+                                    <button class="mini-btn" onclick="handleInput('student_speak')">去练习</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-hd"><span>学习建议</span><span style="font-size:12px; color:#6b7280;">今日</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">优先顺序</div>
+                                        <div class="sub">错因纠正 → 同类题 3 道 → 讲评回看（预计 18 分钟）</div>
+                                    </div>
+                                    <button class="mini-btn" onclick="handleInput('student_preview')">生成计划</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">提升建议</div>
+                                        <div class="sub">审题时先圈“截距/交点/区间”，再代入检验（减少粗心）</div>
+                                    </div>
+                                    <button class="mini-btn" onclick="handleInput('student_error')">做练习</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (currentRole === "parent") {
+                panelEl.innerHTML = `
+                    
+                    <div class="kpi-grid">
+                        <div class="kpi"><div class="kpi-val">1</div><div class="kpi-lbl">待确认事项</div></div>
+                        <div class="kpi"><div class="kpi-val">88%</div><div class="kpi-lbl">作业完成（7天）</div></div>
+                        <div class="kpi"><div class="kpi-val">+6</div><div class="kpi-lbl">数学掌握度变化</div></div>
+                        <div class="kpi"><div class="kpi-val">12min</div><div class="kpi-lbl">家校沟通时长（周）</div></div>
+                    </div>
+
+                    <div class="below-panels">
+                        <div class="panel">
+                            <div class="panel-hd"><span>重点提醒</span><span style="font-size:12px; color:#6b7280;">近 7 天</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">数学：二次函数最值（掌握率偏低）</div>
+                                        <div class="sub">建议：本周完成 2 次“图像读截距”专项练习</div>
+                                    </div>
+                                    <button class="mini-btn primary" onclick="handleInput('parent_talk')">生成沟通单</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">作业习惯：晚间提交偏晚</div>
+                                        <div class="sub">建议：固定 20:30 前完成，降低疲劳导致的错误</div>
+                                    </div>
+                                    <button class="mini-btn" onclick="handleInput('parent_guide')">生成行动计划</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-hd"><span>家庭共育建议</span><span style="font-size:12px; color:#6b7280;">可执行</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">7 天行动</div>
+                                        <div class="sub">每天 15 分钟：订正 1 题 + 复述错因（家长只问 2 个问题）</div>
+                                    </div>
+                                    <button class="mini-btn primary" onclick="handleInput('parent_guide')">生成 7 天计划</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">沟通建议</div>
+                                        <div class="sub">用“过程表扬 + 具体策略”替代结果评价（减少对抗）</div>
+                                    </div>
+                                    <button class="mini-btn" onclick="handleInput('parent_talk')">一键生成单</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (currentRole === "admin") {
+                panelEl.innerHTML = `
+                    
+                    <div class="seg" style="display:flex; justify-content:space-between; align-items:center; margin:10px 0 0;">
+                        <div class="seg-pill" style="font-size:12px; color:#6b7280;">时间粒度</div>
+                        <div class="seg-ctls" style="background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:2px;">
+                            <button class="seg-btn active" id="segToday" onclick="setAdminGranularity('today')">今日</button>
+                            <button class="seg-btn" id="segWeek" onclick="setAdminGranularity('week')">本周</button>
+                            <button class="seg-btn" id="segMonth" onclick="setAdminGranularity('month')">本月</button>
+                        </div>
+                    </div>
+
+                    <div class="kpi-grid" id="adminKpiGrid">
+                        <div class="kpi"><div class="kpi-val" id="kpiAttendance">97.6%</div><div class="kpi-lbl">出勤率</div></div>
+                        <div class="kpi"><div class="kpi-val" id="kpiRisk">2</div><div class="kpi-lbl">风险事件</div></div>
+                        <div class="kpi"><div class="kpi-val" id="kpiCanteen">4.6</div><div class="kpi-lbl">食堂满意度</div></div>
+                        <div class="kpi"><div class="kpi-val" id="kpiTasks">14</div><div class="kpi-lbl">治理事项</div></div>
+                    </div>
+
+                    <div class="below-panels">
+                        <div class="panel">
+                            <div class="panel-hd"><span>风险 Top</span><span style="font-size:12px; color:#6b7280;">本周</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">学情：函数模块薄弱点上升</div>
+                                        <div class="sub">年级：八年级 · 重点班级：8(2)、8(5)</div>
+                                    </div>
+                                    <button class="mini-btn primary" onclick="handleInput('admin_dashboard')">查看趋势</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">安全：操场拥挤预警</div>
+                                        <div class="sub">午间 12:10–12:25 · 建议增派巡查</div>
+                                    </div>
+                                    <button class="mini-btn" onclick="handleInput('admin_safe')">生成处置单</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-hd"><span>治理建议</span><span style="font-size:12px; color:#6b7280;">可派单</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">学情督导</div>
+                                        <div class="sub">针对“截距/最值”发起专项作业 + 讲评，追踪完成率与掌握率</div>
+                                    </div>
+                                    <button class="mini-btn primary" onclick="handleInput('admin_risk')">生成派单</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">食堂满意度</div>
+                                        <div class="sub">建议：本周做一次“营养+价格”问卷采样，优化菜单结构</div>
+                                    </div>
+                                    <button class="mini-btn" onclick="handleInput('admin_canteen')">生成方案</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (currentRole === "teacher") {
+                panelEl.innerHTML = `
+                    
+                    <div class="kpi-grid">
+                        <div class="kpi">
+                            <div class="kpi-val">92%</div>
+                            <div class="kpi-lbl">作业完成率（7天）<br><span style="font-size:10px; color:#10b981;">环比 +4%</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-val">77%</div>
+                            <div class="kpi-lbl">一次函数-截距（本周）<br><span style="font-size:10px; color:#ef4444;">低于年级均值 82%</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-val">86%</div>
+                            <div class="kpi-lbl">订正回传率<br><span style="font-size:10px; color:#6b7280;">12/14 已回传</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-val">3</div>
+                            <div class="kpi-lbl">待跟进事项<br><span style="font-size:10px; color:#6b7280;">讲评分层/家校</span></div>
+                        </div>
+                    </div>
+
+                    <div class="below-panels">
+                        <div class="panel">
+                            <div class="panel-hd"><span>通知</span><span style="font-size:12px; color:#6b7280;">近 24h</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">练习回传提醒：一次函数截距（12/14 已回传）</div>
+                                        <div class="sub">建议：优先生成 5 分钟讲评课件，并对未回传学生单独提醒</div>
+                                    </div>
+                                    <div style="display:flex; gap:8px;">
+                                        <button class="mini-btn" onclick="handleInput('teacher_lesson')">生成讲评</button>
+                                        <button class="mini-btn" onclick="handleInput('teacher_homework')">查看回传</button>
+                                    </div>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">低掌握率预警：二次函数最值（掌握率 77%）</div>
+                                        <div class="sub">建议：按错因标签分层推送（读图/计算/审题）</div>
+                                    </div>
+                                    <div style="display:flex; gap:8px;">
+                                        <button class="mini-btn" onclick="openPushModal()">配置推送</button>
+                                        <button class="mini-btn" onclick="handleInput('teacher_homework')">生成分层</button>
+                                    </div>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">学习行为提醒：李明近 3 次提交延迟</div>
+                                        <div class="sub">建议：先发送学习节奏提醒，如无改善再发起家校沟通单</div>
+                                    </div>
+                                    <div style="display:flex; gap:8px;">
+                                        <button class="mini-btn" onclick="handleInput('teacher_paper')">生成沟通单</button>
+                                        <button class="mini-btn" onclick="dismissTask('')">稍后处理</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-hd"><span>建议</span><span style="font-size:12px; color:#6b7280;">可执行</span></div>
+                            <div class="panel-bd">
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">分层讲评：先统一“截距定义”再做“读图→代入”</div>
+                                        <div class="sub">A 类读图错误：强调坐标轴交点；B 类计算错误：板演规范步骤</div>
+                                    </div>
+                                    <button class="mini-btn primary" onclick="handleInput('teacher_lesson')">生成课件</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">分层作业：基础 1 题 | 提升 1 题 | 拓展 1 题</div>
+                                        <div class="sub">将巩固作业按 A/B/C 组下发，减少一刀切负担</div>
+                                    </div>
+                                    <button class="mini-btn primary" onclick="handleInput('teacher_homework')">一键生成</button>
+                                </div>
+                                <div class="item">
+                                    <div class="meta">
+                                        <div class="title">家校协同：薄弱点 + 7天游学行动（10分钟/天）</div>
+                                        <div class="sub">对持续偏低学生，自动摘要薄弱点并给家长可执行动作</div>
+                                    </div>
+                                    <div style="display:flex; gap:8px;">
+                                        <button class="mini-btn" onclick="handleInput('parent_report')">生成周报</button>
+                                        <button class="mini-btn" onclick="handleInput('parent_connect')">生成沟通单</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+        }
+
+
+        function changeStudent(id){
+            APP_STATE.currentStudentId = id;
+            // 同步角色名展示更贴近真实
+            const stu = getStudentById(id);
+            CONFIG.student.name = stu.name;
+            CONFIG.student.role = stu.className;
+            switchRole("student");
+        }
+        function changeChild(id){
+            APP_STATE.currentChildId = id;
+            switchRole("parent");
+        }
+        function changeAdminRange(val){
+            // 演示用：仅刷新面板；真实系统会触发重拉数据
+            showToast("已切换时间范围", `当前：${val === "today" ? "今日" : val === "week" ? "本周" : "本月"}`);
+            renderRoleDashboard();
+        }
+
+        function openTopTask(){
+            const role = currentRole;
+            const list = getActiveTasks(role);
+            if (list.length===0){ showToast("暂无待办", "请先由教师端推送或触发场景。"); return; }
+            openTask(list[0].id);
+        }
+        function quickStudentStart(){
+            // 优先打开第一条待办，否则进入错题诊断
+            const list = getActiveTasks("student");
+            if (list.length) { openTask(list[0].id); return; }
+            document.getElementById('mainInput').value = "我想先做一次错题诊断：请从审题到建模帮我纠偏。";
+            handleInput("student_mistake");
+        }
+function emitTask(toRole, task) {
+            addTask(toRole, task);
+            showToast("已推送任务", `已推送至【${CONFIG[toRole].role}】待办：${task.title}`, [
+                { label: "立即查看", primary: true, onClick: () => switchRole(toRole) }
+            ]);
+        }
+
+        function consumePendingCtx() {
+            const c = APP_STATE.pendingCtx;
+            APP_STATE.pendingCtx = null;
+            return c;
+        }
+
+
+        // === 2. 核心交互逻辑 ===
+        function enterWorkspace(role) {
+            currentRole = role;
+            const data = CONFIG[role];
+            
+            // 动态配色
+            document.documentElement.style.setProperty('--theme-color', data.color);
+            document.documentElement.style.setProperty('--theme-bg', data.bg);
+            
+            // 渲染侧边栏
+            document.getElementById('userBadge').innerHTML = `
+                <div style="width:40px; height:40px; border-radius:10px; background:${data.bg}; color:${data.color}; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                    <i class="ri-user-smile-line"></i>
+                </div>
+                <div>
+                    <div style="font-weight:600; font-size:14px; color:#111;">${data.name}</div>
+                    <div style="font-size:11px; color:#888;">${data.role}</div>
+                </div>
+            `;
+            
+            // 渲染 Hero
+            document.getElementById('heroGreeting').innerText = data.greeting;
+            document.getElementById('mainInput').placeholder = data.placeholder;
+            
+            const pc = document.getElementById('pillContainer');
+            pc.innerHTML = '';
+            data.pills.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'pill';
+                el.innerHTML = `<i class="${p.icon}" style="color:${data.color}"></i> ${p.text}`;
+                el.onclick = () => handlePill(p.action);
+                pc.appendChild(el);
+            });
+
+            // 转场
+            document.getElementById('portalScene').classList.add('hidden');
+            document.getElementById('workspaceScene').classList.add('active');
+            renderTodos();
+            renderRoleDashboard();
+            
+            // 显示KPI、重要通知和建议
+            document.getElementById('topContextBar').style.display = 'block';
+            document.getElementById('roleDashboard').style.display = 'block';
+        }
+
+        function exitWorkspace() {
+            document.getElementById('workspaceScene').classList.remove('active');
+            document.getElementById('portalScene').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('heroLayer').classList.remove('hidden');
+                document.getElementById('chatLayer').style.display = 'none';
+                document.getElementById('chatContainer').innerHTML = '';
+                document.getElementById('mainInput').value = '';
+            }, 500);
+        }
+
+        function handlePill(action) {
+            const input = document.getElementById('mainInput');
+            // 预设 Prompt
+            const prompts = {
+                teacher_lesson: "帮我生成初二数学《勾股定理》第一课时的教学设计，注重数形结合思想，包含分层练习。",
+                teacher_homework: "分析昨日初二(3)班数学作业数据，包含客观题正确率和主观题初评。",
+                teacher_paper: "我想写一篇关于“初中数学数形结合教学”的论文，请推荐选题并梳理文献。",
+                
+                student_mistake: "这道函数题我做错了（已上传图片），请帮我诊断错误并推送同类题。",
+                student_english: "我想练习“机场值机”场景的英语对话，你扮演地勤人员。",
+                student_preview: "生成明日课程的预习计划，我是初二学生，重点关注物理“光的折射”。",
+                
+                parent_report: "生成李明本周的成长周报，包含学业、体质和素养三个维度。",
+                parent_connect: "查询孩子近期的学业进度，是否有异常情况预警？",
+                parent_edu: "孩子最近有些厌学情绪，作为家长我该如何沟通？请提供指导。",
+                
+                admin_safety: "扫描全校安防监控，识别异常人员和区域入侵风险。",
+                admin_activity: "策划一场以“人工智能”为主题的校园文化节活动，生成方案。",
+                admin_canteen: "生成本周食堂运营报告，包含营养分析和学生满意度优化建议。"
+            };
+            
+            input.value = prompts[action] || "执行操作...";
+            handleInput(action);
+        }
+
+        function handleInput(actionType = 'generic') {
+            const text = document.getElementById('mainInput').value;
+            if (!text) return;
+
+            document.getElementById('heroLayer').classList.add('hidden');
+            document.getElementById('chatLayer').style.display = 'block';
+            
+            // 隐藏KPI、重要通知和建议
+            document.getElementById('topContextBar').style.display = 'none';
+            document.getElementById('roleDashboard').style.display = 'none';
+
+            addMsg('User', text);
+            setTimeout(() => startDeepDive(actionType), 600);
+        }
+
+
+        function prefillAndRun(actionType, text){
+            document.getElementById('mainInput').value = text || "";
+            handleInput(actionType);
+        }
+
+
+        // === 2.1 链路A：跨角色闭环动作（Teacher → Student → Teacher） ===
+        
+        // === 2.1.1 链路A增强：可配置推送（选知识点 + 选学生） ===
+        
+function setPushMode(mode){
+            APP_STATE.pushMode = mode;
+
+            const btnK = document.getElementById("pushMode_kp");
+            const btnT = document.getElementById("pushMode_tag");
+            const btnQ = document.getElementById("pushMode_q");
+            if (btnK) btnK.classList.toggle("active", mode==="kp");
+            if (btnT) btnT.classList.toggle("active", mode==="tag");
+            if (btnQ) btnQ.classList.toggle("active", mode==="q");
+
+            const pK = document.getElementById("pick_kp");
+            const pT = document.getElementById("pick_tag");
+            const pQ = document.getElementById("pick_q");
+            if (pK) pK.style.display = (mode==="kp") ? "block" : "none";
+            if (pT) pT.style.display = (mode==="tag") ? "block" : "none";
+            if (pQ) pQ.style.display = (mode==="q") ? "block" : "none";
+
+            const title = document.getElementById("pickTitle");
+            if (title){
+                title.textContent = mode==="kp" ? "知识点（可多选）" : (mode==="tag" ? "错因标签（可多选）" : "题目订正（可多选）");
+            }
+        }
+
+        function openPushModal(){
+            const insight = APP_STATE.lastHomeworkInsight;
+            if (!insight) {
+                showToast("未找到作业洞察", "请先运行「作业数据分析」场景。");
+                return;
+            }
+            const modal = document.getElementById("pushModal");
+            const kpList = document.getElementById("kpPickList");
+            const tagList = document.getElementById("tagPickList");
+            const qList = document.getElementById("qPickList");
+            const stuList = document.getElementById("stuPickList");
+            if (!modal || !kpList || !tagList || !qList || !stuList) return;
+
+            // 推荐知识点：来自洞察 + 2 个常见扩展（演示更真实）
+            const kpCandidates = [
+                insight.kp,
+                "一次函数图像与截距关系",
+                "用点求一次函数解析式"
+            ];
+            kpList.innerHTML = kpCandidates.map((kp,i)=>`
+                <li>
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1;">
+                        <input type="checkbox" class="kpPick" value="${kp}" ${i===0?"checked":""} />
+                        <span style="font-size:13px; color:#111827; font-weight:600;">${kp}</span>
+                    </label>
+                    <span style="font-size:12px; color:#6b7280;">${i===0?"洞察命中":"扩展"}</span>
+                </li>
+            `).join("");
+
+            // 错因标签：来自洞察
+            const tags = (insight.errorTags || []);
+            tagList.innerHTML = tags.map((t,i)=>`
+                <li>
+                    <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; flex:1;">
+                        <input type="checkbox" class="tagPick" value="${t.tag}" ${i===0?"checked":""} />
+                        <div>
+                            <div style="font-size:13px; color:#111827; font-weight:700;">${t.tag}</div>
+                            <div style="font-size:12px; color:#6b7280; line-height:1.35;">${t.desc}</div>
+                        </div>
+                    </label>
+                    <span style="font-size:12px; color:#6b7280;">${t.count}题</span>
+                </li>
+            `).join("");
+
+            // 题目订正：来自题库（演示）
+            const qs = (insight.questionBank || []);
+            qList.innerHTML = qs.map((q,i)=>`
+                <li>
+                    <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; flex:1;">
+                        <input type="checkbox" class="qPick" value="${q.id}" data-kp="${q.kp}" data-tag="${q.tag}" ${i===0?"checked":""} />
+                        <div>
+                            <div style="font-size:13px; color:#111827; font-weight:800;">${q.id} <span style="font-weight:650; color:#6b7280;">· ${q.tag}</span></div>
+                            <span class="qStem">${q.stem}</span>
+                        </div>
+                    </label>
+                </li>
+            `).join("");
+
+            // 学生列表：默认勾选洞察关注学生
+            const focus = new Set(insight.focusStudents || []);
+            stuList.innerHTML = (APP_STATE.roster||[]).map(s=>`
+                <li>
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1;">
+                        <input type="checkbox" class="stuPick" value="${s.id}" ${focus.has(s.name)?"checked":""} />
+                        <span style="font-size:13px; color:#111827; font-weight:600;">${s.name}</span>
+                    </label>
+                    <span style="font-size:12px; color:#6b7280;">${s.className}</span>
+                </li>
+            `).join("");
+
+            setPushMode("kp");
+            modal.style.display="flex";
+        }
+
+function closePushModal(){
+            const modal = document.getElementById("pushModal");
+            if (modal) modal.style.display="none";
+        }
+
+        function toggleAll(which, checked){
+            let cls = ".stuPick";
+            if (which === "kp") cls = ".kpPick";
+            if (which === "tag") cls = ".tagPick";
+            if (which === "q") cls = ".qPick";
+            if (which === "stu") cls = ".stuPick";
+            document.querySelectorAll(cls).forEach(el => el.checked = checked);
+        }
+
+        
+function confirmPushModal(){
+            const insight = APP_STATE.lastHomeworkInsight;
+            if (!insight) return;
+
+            const mode = APP_STATE.pushMode || "kp";
+            const stus = Array.from(document.querySelectorAll(".stuPick")).filter(x=>x.checked).map(x=>x.value);
+
+            if (stus.length === 0){ showToast("未选择学生", "请至少选择 1 名学生。"); return; }
+
+            // 选择推送内容
+            let selection = { mode, items: [], questions: [] };
+
+            if (mode === "kp"){
+                const kps = Array.from(document.querySelectorAll(".kpPick")).filter(x=>x.checked).map(x=>x.value);
+                if (kps.length === 0){ showToast("未选择知识点", "请至少选择 1 个知识点。"); return; }
+                selection.items = kps;
+            } else if (mode === "tag"){
+                const tags = Array.from(document.querySelectorAll(".tagPick")).filter(x=>x.checked).map(x=>x.value);
+                if (tags.length === 0){ showToast("未选择错因标签", "请至少选择 1 个错因标签。"); return; }
+                selection.items = tags;
+            } else {
+                const qids = Array.from(document.querySelectorAll(".qPick")).filter(x=>x.checked).map(x=>x.value);
+                if (qids.length === 0){ showToast("未选择题目", "请至少选择 1 道题目。"); return; }
+                const bank = insight.questionBank || [];
+                selection.questions = bank.filter(q=>qids.includes(q.id));
+                selection.items = qids;
+            }
+
+            // 生成学生端待办：每名学生 1 个任务（更贴近真实：一个任务里包含多个知识点/错因/题目）
+            let count = 0;
+            stus.forEach(sid=>{
+                const stu = getStudentById(sid);
+                const taskId = uid("task");
+
+                let title = "错题巩固";
+                let desc = `来自教师推送 · 班级：${insight.className}`;
+                if (mode==="kp"){
+                    title = `错题巩固：${selection.items[0]}${selection.items.length>1?" 等":""}`;
+                    desc += ` · 知识点：${selection.items.slice(0,2).join("、")}${selection.items.length>2?"…":""} · 典型错因：${insight.topError}`;
+                }
+                if (mode==="tag"){
+                    title = `错因纠正：${selection.items[0]}${selection.items.length>1?" 等":""}`;
+                    desc += ` · 错因标签：${selection.items.slice(0,2).join("、")}${selection.items.length>2?"…":""} · 命中知识点：${insight.kp}`;
+                }
+                if (mode==="q"){
+                    title = `错题订正：${selection.items.slice(0,2).join(",")}${selection.items.length>2?"…":""}`;
+                    desc += ` · 题目：${selection.items.join(",")} · 命中知识点：${insight.kp}`;
+                }
+
+                emitTask("student", {
+                    id: taskId,
+                    status: "todo",
+                    studentId: sid,
+                    title,
+                    tag: "错题训练",
+                    desc,
+                    scenario: "student_mistake",
+                    payload: {
+                        source:"teacher_homework",
+                        mode,
+                        kps: (mode==="kp") ? selection.items : [],
+                        errorTags: (mode==="tag") ? selection.items : [],
+                        questions: (mode==="q") ? selection.questions : [],
+                        topError: insight.topError,
+                        className: insight.className,
+                        teacherName: CONFIG.teacher.name
+                    },
+                    suggestedPrompt: buildSuggestedPromptForPush(mode, selection, insight)
+                });
+                count += 1;
+            });
+
+            closePushModal();
+
+            // 更新管理端/驾驶舱模拟统计（趋势、班级对比）
+            try { updateAdminAnalyticsOnPush(mode, selection, stus, insight.className); } catch(e){}
+
+            showToast("推送成功", `已推送 ${count} 个任务（${stus.length}名学生）。`, [
+                { label: "切到学生端", primary: true, onClick: () => { APP_STATE.currentStudentId = stus[0]; changeStudent(stus[0]); } }
+            ]);
+
+            // 家长端：学习提醒（更贴近现实联动）
+            const child = getChildById(APP_STATE.currentChildId);
+            const hint = mode==="kp" ? `老师推送了错题巩固：${selection.items[0]}${selection.items.length>1?" 等":""}`
+                        : mode==="tag" ? `老师推送了错因纠正：${selection.items[0]}${selection.items.length>1?" 等":""}`
+                        : `老师推送了错题订正：${selection.items.slice(0,2).join(",")}${selection.items.length>2?"…":""}`;
+
+            emitTask("parent", {
+                id: uid("task"),
+                status: "todo",
+                childId: child.id,
+                title: "学习提醒：老师推送错题巩固",
+                tag: "家校协同",
+                desc: `${hint}。建议今晚安排 20–25 分钟完成，并提醒孩子按“错因”复盘。`,
+                scenario: "parent_connect",
+                payload: { mode, items: selection.items, className: insight.className }
+            });
+
+            // 管理端：学情提醒（治理联动）
+            emitTask("admin", {
+                id: uid("task"),
+                status: "todo",
+                title: "学情提醒：年级薄弱点跟踪",
+                tag: "教学治理",
+                desc: `初二年级出现集中错因/薄弱点，建议关注：${mode==="kp"?selection.items[0]:insight.kp}，并追踪班级完成率与掌握率。`,
+                scenario: "admin_activity",
+                payload: { focus: mode==="kp"?selection.items[0]:insight.kp, mode }
+            });
+        }
+
+        function buildSuggestedPromptForPush(mode, selection, insight){
+            if (mode==="kp"){
+                const kp = selection.items[0];
+                return `老师推送了错题巩固（知识点：${selection.items.join("、")}）。请先用一句话讲清「${kp}」核心概念，再按“易→中→难”出 3 道同类题并给出自测题。最后提醒我总结错因。`;
+            }
+            if (mode==="tag"){
+                const tag = selection.items[0];
+                return `老师推送了错因纠正（标签：${selection.items.join("、")}）。请先解释“${tag}”通常怎么错，然后给出 2 个避免策略；再提供 3 道练习题（递进）并提示我用一句话复盘。`;
+            }
+            // q
+            const q0 = selection.questions?.[0]?.id || "题目";
+            return `老师推送了错题订正（${selection.items.join(",")}）。请引导我按步骤订正：先复述题意→列式→验算→总结错因；最后给出 1 道同类变式题自测。`;
+        }
+
+function pushMistakePackage() {
+            const insight = APP_STATE.lastHomeworkInsight;
+            if (!insight) {
+                showToast("未找到作业洞察", "请先运行「作业数据分析」场景。");
+                return;
+            }
+            const taskId = uid("task");
+            emitTask("student", {
+                id: taskId,
+                status: "todo",
+                title: `错题纠正：${insight.kp}`,
+                tag: "错题训练",
+                desc: `来自教师推送 · 重点纠正：${insight.topError}`,
+                scenario: "student_mistake",
+                payload: { source:"teacher_homework", kp: insight.kp, topError: insight.topError, className: insight.className },
+                suggestedPrompt: `老师推送了错题练习包：请帮我把「${insight.kp}」的概念讲明白，并给我 3 道同类题（递进）。`
+            });
+
+            showToast("推送成功", `已向学生端推送「${insight.kp}」错题练习包。`, [
+                { label: "切到学生端", primary: true, onClick: () => switchRole("student") }
+            ]);
+        }
+
+        function genReviewCourseware() {
+            const insight = APP_STATE.lastHomeworkInsight;
+            APP_STATE.pendingCtx = insight ? { source:"teacher_homework", ...insight } : null;
+            document.getElementById('mainInput').value = insight
+                ? `基于「${insight.kp}」高频错因，为我生成一份 5 分钟讲评课件（板书结构 + 讲解话术 + 课堂提问）。`
+                : "生成讲评课件（5分钟微讲评）";
+            handleInput("teacher_review");
+        }
+
+        function reportStudentResultToTeacher() {
+            const res = APP_STATE.lastStudentResult;
+            if (!res) {
+                showToast("未找到练习结果", "请先完成一次错题训练。");
+                return;
+            }
+            const taskId = uid("task");
+            emitTask("teacher", {
+                id: taskId,
+                status: "todo",
+                title: `练习回传：${res.kp}（掌握率 ${res.mastery}%）`,
+                tag: "回传",
+                desc: `学生已完成练习 · 建议：${res.suggestion}`,
+                scenario: "teacher_followup",
+                payload: { source:"student_mistake", kp: res.kp, mastery: res.mastery, suggestion: res.suggestion },
+                suggestedPrompt: `查看学生「${res.kp}」练习回传，并生成下一步讲评与分层作业建议。`
+            });
+
+            // 驾驶舱统计：完成回传后，提升班级完成率/掌握率（演示）
+            try { updateAdminAnalyticsOnReturn(APP_STATE.lastHomeworkInsight?.className || "初二(3)班", (res.mastery>=85?0.035:0.025)); } catch(e){}
+
+
+            showToast("已回传教师", `已将「${res.kp}」练习结果回传到教师端。`, [
+                { label: "切到教师端", primary: true, onClick: () => switchRole("teacher") }
+            ]);
+        }
+
+
+        function addMsg(role, html) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            const color = CONFIG[currentRole].color;
+            const icon = role === 'User' ? '<i class="ri-user-smile-line"></i>' : `<i class="ri-openai-fill" style="color:${color}"></i>`;
+            div.innerHTML = `<div class="msg-head">${icon} ${role === 'User' ? 'You' : 'EduCore'}</div><div class="msg-body">${html}</div>`;
+            document.getElementById('chatContainer').appendChild(div);
+            scrollToBottom();
+        }
+
+        // === 3. 深度场景模拟引擎 (The Core) ===
+        async function startDeepDive(type) {
+            const container = document.getElementById('chatContainer');
+            const thinkBox = document.createElement('div');
+            thinkBox.className = 'thinking-box';
+            container.appendChild(thinkBox);
+
+            let steps = [];
+            let summary = "";
+            let artifactHTML = "";
+
+            const ctx = consumePendingCtx() || {};
+
+            // ================== TEACHER ==================
+            if (type === 'teacher_lesson') {
+                steps = ["分析课标：八年级数学下册 / 几何直观 / 逻辑推理", "检索素材库：毕达哥拉斯地砖、赵爽弦图、九章算术", "设计教学策略：情境导入 -> 探究证明(面积法) -> 归纳应用", "构建分层资源：A层基础计算 / B层古籍建模应用", "渲染教学设计卡片..."];
+                summary = "教案已生成。重点利用<b>“赵爽弦图”</b>突破数形结合难点。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700; color:#9a3412">勾股定理 (第1课时)</span><span style="font-size:11px; color:#888">人教版 八年级下册</span></div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="t-box">导入<br><span style="color:#999; font-size:10px">地砖规律</span></div>
+                            <div class="t-box" style="border-color:var(--theme-color); background:#fff7ed">探究<br><span style="color:#c2410c; font-size:10px">赵爽弦图</span></div>
+                            <div class="t-box">练习<br><span style="color:#999; font-size:10px">分层应用</span></div>
+                        </div>
+                        <div style="font-size:12px; font-weight:700; color:#aaa; margin:15px 0 5px 0;">💡 重难点突破</div>
+                        <div class="hl-box" style="border-left:3px solid var(--theme-color); background:#fff7ed; padding:10px;">利用几何画板展示朱实与黄实拼接，推导 $a^2+b^2=c^2$。</div>
+                    </div>
+                    <div class="card-actions"><button class="btn btn-primary">存入备课本</button></div>`;
+            }
+            else if (type === 'teacher_homework') {
+                steps = ["连接阅卷系统 API...", "抓取客观题数据：正确率 78%", "主观题语义分析：关键词“截距含义”缺失", "生成班级学情图表..."];
+                summary = "昨日作业分析已完成。整体表现良好，但<b>“一次函数截距”</b>概念存在普遍认知偏差。";
+                // 链路A：将本次作业洞察写入状态（供“推送错题练习包”使用）
+                APP_STATE.lastHomeworkInsight = {
+                    className: "初二(3)班",
+                    kp: "一次函数截距",
+                    topError: "概念理解缺失：截距含义与图像交点对应关系",
+                    focusStudents: ["李明", "张伟", "王芳", "陈浩"],
+                    // 错因标签（演示更贴近真实：可按错因推送）
+                    errorTags: [
+                        { tag:"概念混淆", count:18, desc:"把“截距”当作斜率/增量，未建立“与坐标轴交点”对应关系" },
+                        { tag:"审题偏差", count:12, desc:"忽略“经过点/与坐标轴交点”条件，直接套公式" },
+                        { tag:"计算失误", count:9,  desc:"代入求 b 时符号错误或移项错误" }
+                    ],
+                    // 题目样例库（演示：可按题目推送订正）
+                    questionBank: [
+                        {
+                            id:"Q5",
+                            kp:"一次函数截距",
+                            tag:"概念混淆",
+                            stem:"已知一次函数 y = 2x + b 经过点 (1,5)，求 b 的值，并说明 b 的几何意义。",
+                            answer:"b = 3；b 表示 y 轴截距，即图像与 y 轴交点的纵坐标。",
+                            keySteps:["代入点(1,5)得 5=2*1+b","求得 b=3","说明：截距对应与 y 轴交点 (0,b)"]
+                        },
+                        {
+                            id:"Q9",
+                            kp:"一次函数截距",
+                            tag:"审题偏差",
+                            stem:"一次函数 y = kx + b 的图像与 y 轴交于点 (0,-2)，与点 (2,2) 过同一直线，求解析式。",
+                            answer:"y = 2x - 2",
+                            keySteps:["由截距得 b=-2","代入点(2,2)：2=2k-2","求 k=2，得 y=2x-2"]
+                        },
+                        {
+                            id:"Q12",
+                            kp:"一次函数截距",
+                            tag:"计算失误",
+                            stem:"若直线 y = -x + b 经过点 (-3,1)，求 b。",
+                            answer:"b = -2",
+                            keySteps:["代入：1 = -(-3) + b","1 = 3 + b","b = -2"]
+                        }
+                    ],
+                    recommend: ["用图像直观解释截距", "3 道同类题递进训练", "课堂 5 分钟微讲评"]
+                };
+
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">📉 作业学情看板</span><span style="font-size:11px; color:#888">初二(3)班</span></div>
+                    <div class="card-body">
+                        <div class="stat-grid" style="margin-bottom:15px;">
+                            <div class="stat-box"><div class="stat-val" style="color:#f97316">82.5</div><div class="stat-lbl">平均分</div></div>
+                            <div class="stat-box"><div class="stat-val">98%</div><div class="stat-lbl">提交率</div></div>
+                            <div class="stat-box"><div class="stat-val" style="color:#ef4444">Q5</div><div class="stat-lbl">高频错题</div></div>
+                        </div>
+                        <div style="font-size:12px; color:#666;">分数段分布</div>
+                        <div class="bar-chart">
+                            <div class="bar" style="height:30%"><span>C</span></div>
+                            <div class="bar" style="height:60%"><span>B</span></div>
+                            <div class="bar" style="height:80%"><span>A</span></div>
+                            <div class="bar" style="height:40%"><span>S</span></div>
+                        </div>
+                    </div>
+                    <div class="card-actions" style="display:flex; gap:10px; flex-wrap:wrap;"><button class="btn btn-primary" onclick="openPushModal()">配置并推送练习包</button><button class="btn" style="border:1px solid #e5e7eb; background:#fff;" onclick="pushMistakePackage()">一键推送（默认）</button><button class="btn" style="border:1px solid #e5e7eb; background:#fff;" onclick="genReviewCourseware()">生成讲解课件</button></div>`;
+            }
+            
+            else if (type === 'teacher_review') {
+                const kp = ctx.kp || "一次函数截距";
+                steps = [
+                    "读取错因聚类结果（来自作业分析）...",
+                    "选择讲评策略：概念澄清 + 图像直观 + 递进练习",
+                    "生成板书结构与讲解话术（5分钟）",
+                    "生成课堂提问与即时反馈题"
+                ];
+                summary = `讲评课件已生成，重点纠正<b>「${kp}」</b>概念偏差，适配 5 分钟课堂微讲评。`;
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">🧩 5分钟讲评课件</span><span style="font-size:11px; color:#888">${ctx.className || "班级"}</span></div>
+                    <div class="card-body">
+                        <div style="font-weight:650; margin-bottom:8px;">① 板书结构（建议）</div>
+                        <div style="font-size:12px; color:#555; line-height:1.5; background:#f9fafb; border:1px solid #eee; padding:10px; border-radius:12px;">
+                            <div><b>1.</b> 截距是什么？ → 直观：图像与 <b>y轴交点</b></div>
+                            <div><b>2.</b> 公式位置：y = kx + b 中的 <b>b</b></div>
+                            <div><b>3.</b> 如何从题目读出截距 → 代入 x=0</div>
+                            <div><b>4.</b> 即时小测：判断/填空（30秒）</div>
+                        </div>
+
+                        <div style="font-weight:650; margin:12px 0 8px;">② 讲解话术（精简）</div>
+                        <div style="font-size:12px; color:#555; line-height:1.5;">
+                            “截距不是一个抽象的数字，它在图上就是 y轴交点的坐标。把 <b>x=0</b> 带入，就能快速找到 b。”
+                        </div>
+
+                        <div style="font-weight:650; margin:12px 0 8px;">③ 课堂提问（即时检查）</div>
+                        <div class="mistake-split" style="grid-template-columns:1fr 1fr;">
+                            <div class="mistake-left"><strong style="display:block; margin-bottom:6px;">快速判断</strong>
+                                <span style="font-size:12px">y = 2x - 3 的截距是多少？图上在哪里？</span>
+                            </div>
+                            <div class="mistake-right"><strong style="display:block; margin-bottom:6px;">迁移应用</strong>
+                                <span style="font-size:12px">已知截距为 4，且过点(2,7)，求解析式。</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="pushMistakePackage()">同步学生练习包</button>
+                        <button class="btn" style="border:1px solid #e5e7eb; background:#fff;" onclick="addMsg('EduCore','已存入【讲评课件库】（模拟）。')">存档到课件库</button>
+                    </div>`;
+            }
+
+            else if (type === 'teacher_paper') {
+                steps = ["检索知网/万方数据库...", "分析近3年热点：数形结合 / 信息化融合", "生成选题推荐", "梳理核心参考文献"];
+                summary = "为您推荐 3 个具有创新性的选题方向，并已梳理相关核心文献。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">📑 论文选题推荐</span></div>
+                    <div class="card-body">
+                        <div class="list-item">
+                            <div><strong>选题 A：</strong> 基于 GeoGebra 的数形结合动态教学实践研究</div>
+                            <span class="tag tag-green">热度高</span>
+                        </div>
+                        <div class="list-item">
+                            <div><strong>选题 B：</strong> “双减”背景下初中数学分层作业设计策略</div>
+                            <span class="tag tag-blue">政策向</span>
+                        </div>
+                        <div style="margin-top:15px; padding:10px; background:#f9fafb; border-radius:8px; font-size:12px; color:#666;">
+                            <strong>📚 核心文献：</strong><br>
+                            1. 王尚志. 数学核心素养的内涵... <br>
+                            2. 张奠宙. 数学教育学导论...
+                        </div>
+                    </div>
+                    <div class="card-actions"><button class="btn btn-primary">生成选题大纲</button></div>`;
+            }
+
+            
+            else if (type === 'teacher_followup') {
+                const kp = (ctx && ctx.kp) ? ctx.kp : "一次函数截距";
+                const mastery = (ctx && ctx.mastery) ? ctx.mastery : 86;
+                steps = [
+                    "读取学生练习回传结果...",
+                    "对比前测/后测掌握度变化",
+                    "生成分层巩固建议（A/B/C）",
+                    "生成下一次作业布置与讲评安排"
+                ];
+                summary = `学生练习已回传：<b>${kp}</b> 当前掌握率 <b>${mastery}%</b>。建议进行 1 次轻量巩固。`;
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">✅ 练习回传与巩固建议</span><span style="font-size:11px; color:#888">教师端</span></div>
+                    <div class="card-body">
+                        <div class="stat-grid" style="margin-bottom:15px;">
+                            <div class="stat-box"><div class="stat-val" style="color:#10b981">${mastery}%</div><div class="stat-lbl">掌握率</div></div>
+                            <div class="stat-box"><div class="stat-val">+12%</div><div class="stat-lbl">提升</div></div>
+                            <div class="stat-box"><div class="stat-val" style="color:#f97316">3题</div><div class="stat-lbl">建议巩固</div></div>
+                        </div>
+                        <div style="font-weight:650; margin-bottom:8px;">分层巩固（推荐）</div>
+                        <div style="font-size:12px; color:#555; line-height:1.5; background:#f9fafb; border:1px solid #eee; padding:10px; border-radius:12px;">
+                            <div><b>A层</b>（全班）：1 道判断 + 1 道代入题（x=0）</div>
+                            <div><b>B层</b>（重点生）：1 道解析式反推题</div>
+                            <div><b>C层</b>（补弱）：图像定位截距 + 口头复述概念</div>
+                        </div>
+                    </div>
+                    <div class="card-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="addMsg('EduCore','已生成并下发【分层巩固作业】（模拟）。')">下发巩固作业</button>
+                        <button class="btn" style="border:1px solid #e5e7eb; background:#fff;" onclick="genReviewCourseware()">再讲一次（5分钟）</button>
+                    </div>`;
+            }
+
+            // ================== STUDENT ==================
+            
+else if (type === 'student_mistake') {
+                const mode = ctx.mode || (ctx.questions && ctx.questions.length ? "q" : (ctx.errorTags && ctx.errorTags.length ? "tag" : "kp"));
+                const focusKp = (ctx.kps && ctx.kps.length) ? ctx.kps[0] : (ctx.questions && ctx.questions[0] ? ctx.questions[0].kp : (ctx.kp || "二次函数最值"));
+                const tags = (ctx.errorTags || []);
+                const kps = (ctx.kps || (ctx.kp?[ctx.kp]:[]));
+                const questions = (ctx.questions || []);
+
+                const chip = (t, tone="neutral") => {
+                    const bg = tone==="warn" ? "#fff7ed" : tone==="ok" ? "#ecfdf5" : "#f3f4f6";
+                    const bd = tone==="warn" ? "#fed7aa" : tone==="ok" ? "#a7f3d0" : "#e5e7eb";
+                    const tx = tone==="warn" ? "#9a3412" : tone==="ok" ? "#065f46" : "#374151";
+                    return `<span style="display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; border:1px solid ${bd}; background:${bg}; color:${tx}; font-size:12px; font-weight:650; margin-right:6px; margin-bottom:6px;">${t}</span>`;
+                };
+
+                let modeLabel = mode==="kp" ? "知识点巩固" : (mode==="tag" ? "错因纠正" : "题目订正");
+                steps = [
+                    "读取教师推送上下文...",
+                    `确定训练模式：${modeLabel}`,
+                    `定位知识点：${focusKp}`,
+                    "生成“纠错策略 + 练习/订正 + 自测”",
+                    "记录完成情况并可回传教师"
+                ];
+
+                let summarySuffix = ctx.teacherName ? `（来源：${ctx.teacherName}老师推送）` : "";
+                summary = `本次任务：<b>${modeLabel}</b>，聚焦<b>「${focusKp}」</b>。完成后将生成掌握率并回传老师用于分层巩固。${summarySuffix}`;
+
+                // 记录练习结果（用于回传教师）
+                const mastery = Math.floor(76 + Math.random()*18);
+                APP_STATE.lastStudentResult = {
+                    kp: focusKp,
+                    mastery,
+                    className: ctx.className || "初二(3)班",
+                    mode,
+                    items: mode==="kp" ? kps : (mode==="tag" ? tags : questions.map(q=>q.id)),
+                    suggestion: mode==="kp"
+                        ? "建议补做 1 道“由图像读截距”变式题，巩固截距与坐标轴交点对应关系"
+                        : mode==="tag"
+                            ? "建议按错因标签复盘：先复述题意→再写关键对应关系→最后验算"
+                            : "建议用“复述题意→列式→验算→总结错因”四步法再订正一次"
+                };
+
+                const chipsHTML = `
+                    <div style="margin:10px 0 2px;">
+                        ${mode==="kp" ? kps.map(x=>chip("知识点："+x, "ok")).join("") : ""}
+                        ${mode==="tag" ? tags.map(x=>chip("错因："+x, "warn")).join("") : ""}
+                        ${mode==="q" ? questions.map(q=>chip(q.id+" · "+q.tag, "neutral")).join("") : ""}
+                    </div>
+                `;
+
+                let mainHTML = "";
+                if (mode === "q" && questions.length){
+                    mainHTML = `
+                        <div style="margin-top:10px; border-top:1px solid #eef2f7; padding-top:10px;">
+                            <div style="font-weight:750; margin-bottom:8px;">题目订正（${questions.length}题）</div>
+                            ${questions.map(q=>`
+                                <div style="border:1px solid #e5e7eb; background:#fff; border-radius:14px; padding:12px; margin-bottom:10px;">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                                        <div style="font-weight:850;">${q.id} <span style="font-weight:650; color:#6b7280;">· ${q.kp}</span></div>
+                                        <span style="font-size:12px; color:#6b7280;">错因标签：${q.tag}</span>
+                                    </div>
+                                    <div style="font-size:12px; color:#374151; margin:8px 0 10px; line-height:1.5;">${q.stem}</div>
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                        <div style="background:#f9fafb; border:1px solid #eef2f7; border-radius:12px; padding:10px;">
+                                            <div style="font-size:12px; font-weight:750; margin-bottom:6px;">我来订正（写关键步骤）</div>
+                                            <textarea style="width:100%; height:70px; border:1px solid #e5e7eb; border-radius:10px; padding:8px; font-size:12px;" placeholder="复述题意→列式→计算→验算"></textarea>
+                                        </div>
+                                        <div style="background:#ecfeff; border:1px solid #a5f3fc; border-radius:12px; padding:10px;">
+                                            <div style="font-size:12px; font-weight:750; margin-bottom:6px;">参考要点（提示）</div>
+                                            <ul style="margin:0; padding-left:16px; font-size:12px; color:#0f172a; line-height:1.5;">
+                                                ${ (q.keySteps||[]).slice(0,3).map(s=>`<li>${s}</li>`).join("")}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join("")}
+                            <div style="font-size:12px; color:#6b7280;">提示：订正后请用一句话写出“我为什么错”，再回传老师。</div>
+                        </div>
+                    `;
+                } else {
+                    const point = mode==="tag" ? (tags[0] || "概念混淆") : "截距 b 的几何意义（与 y 轴交点）";
+                    const fix = mode==="tag" ? "先复述题意→标注条件→写对应关系→再列式验算" : "先从图像/交点理解，再代入求 b，最后用 (0,b) 验证";
+                    mainHTML = `
+                        <div class="mistake-split">
+                            <div class="mistake-left">
+                                <strong style="color:#ef4444">❌ 你的卡点</strong><br>
+                                <span style="font-size:12px">${mode==="tag" ? ("典型错因："+point) : ("把“截距 b”误当成“斜率 k”，忽略图像与 y 轴交点。")}</span>
+                            </div>
+                            <div class="mistake-right">
+                                <strong style="color:#047857">✅ 纠错策略</strong><br>
+                                <span style="font-size:12px">${fix}</span>
+                            </div>
+                        </div>
+
+                        <div class="practice-box">
+                            <div class="practice-title">递进练习（示例）</div>
+                            <ol class="practice-list">
+                                <li>已知 y = 3x + b 经过 (2,7)，求 b，并写出截距对应的点。</li>
+                                <li>直线与 y 轴交点为 (0,-1)，且过点 (1,1)，求解析式。</li>
+                                <li>给出两点 (0,b)、(2,3)，写出函数式并判断 b 的变化对图像的影响。</li>
+                            </ol>
+                            <div style="margin-top:8px; font-size:12px; color:#6b7280;">完成后回传老师：系统将给出掌握率（模拟）并生成分层巩固建议。</div>
+                        </div>
+                    `;
+                }
+
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:800; color:#1e40af">📐 错题训练任务</span><span style="font-size:11px; color:#6b7280;">${modeLabel}</span></div>
+                    <div class="card-body">
+                        ${chipsHTML}
+                        ${mainHTML}
+                    </div>
+                    <div class="card-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="reportStudentResultToTeacher()">完成并回传老师</button>
+                        <button class="btn" style="border:1px solid #e5e7eb; background:#fff;" onclick="addMsg('EduCore','已将本次任务加入【错题本】（模拟）。')">加入错题本</button>
+                    </div>`;
+            }
+else if (type === 'student_english') {
+                steps = ["加载场景：Airport Check-in", "初始化 AI 角色：Ground Staff", "开启语音识别引擎...", "生成开场白"];
+                summary = "Scene loaded. You are at the check-in counter. I am ready to help you.";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">✈️ Airport Roleplay</span><span class="tag tag-blue">Speaking</span></div>
+                    <div class="card-body">
+                        <div style="background:#f9fafb; padding:15px; border-radius:8px; height:150px; overflow-y:auto;">
+                            <div class="chat-bubble bubble-ai">Good morning. May I see your passport and ticket, please?</div>
+                            <div class="chat-bubble bubble-user">Here they are. I'd like a window seat.</div>
+                            <div class="chat-bubble bubble-ai">Sure. Do you have any luggage to check in?</div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button class="btn" style="flex:1; justify-content:center;"><i class="ri-mic-line"></i> 按住说话</button>
+                        </div>
+                    </div>`;
+            }
+            else if (type === 'student_preview') {
+                steps = ["分析课表：明日有物理、数学、英语", "定位重点：物理八下《光的折射》", "检索资源：3D 光路演示视频 + 导学案", "生成计划清单"];
+                summary = "已为你生成明日预习计划。重点攻克物理<b>“光的折射”</b>光路图画法。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">📅 明日预习清单</span><span style="font-size:11px; color:#888">初二物理重点</span></div>
+                    <div class="card-body">
+                        <div class="list-item">
+                            <div><strong style="color:#1d4ed8">1. 物理 (15min)</strong><br><span style="font-size:12px">观看《光路可逆原理》3D演示</span></div>
+                            <span class="tag tag-orange">必做</span>
+                        </div>
+                        <div class="list-item">
+                            <div><strong>2. 数学 (10min)</strong><br><span style="font-size:12px">浏览《勾股定理》教材例题</span></div>
+                            <span class="tag tag-green">浏览</span>
+                        </div>
+                        <div style="margin-top:10px; background:#eff6ff; padding:10px; border-radius:8px; font-size:13px; color:#1e40af;">
+                            ▶️ <strong>视频资源已就绪：</strong> 点击开始播放
+                        </div>
+                    </div>
+                    <div class="card-actions"><button class="btn btn-primary">开始预习</button></div>`;
+            }
+
+            // ================== PARENT ==================
+            else if (type === 'parent_report') {
+                steps = ["聚合教务成绩数据", "同步体质监测手环数据", "提取综合素养评价", "生成五维雷达图"];
+                summary = "李明本周<b>学业表现稳定</b>，<b>体质健康</b>得分显著提升，阅读量需加强。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700; color:#065f46">📈 本周成长报告</span><span style="font-size:11px; color:#888">第12周</span></div>
+                    <div class="card-body">
+                        <div style="display:flex; justify-content:center; margin:15px 0;">
+                            <div style="width:120px; height:120px; background:conic-gradient(#10b981 0% 70%, #ecfdf5 70% 100%); border-radius:50%; position:relative;">
+                                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-weight:700;">A</div>
+                            </div>
+                        </div>
+                        <div class="stat-grid">
+                            <div class="stat-box"><div class="stat-val">92</div><div class="stat-lbl">学业</div></div>
+                            <div class="stat-box"><div class="stat-val" style="color:#10b981">Top 10%</div><div class="stat-lbl">体质</div></div>
+                            <div class="stat-box"><div class="stat-val">3本</div><div class="stat-lbl">阅读</div></div>
+                        </div>
+                    </div>
+                    <div class="card-actions" style="display:flex; gap:10px; flex-wrap:wrap;"><button class="btn btn-primary" onclick="prefillAndRun('parent_connect', '基于本周周报，请帮我生成一条结构化沟通单给班主任/任课老师：包含我观察到的问题、我希望确认的点、我将配合的行动。')">生成沟通单</button><button class="btn" style="border:1px solid #e5e7eb; background:#fff;" onclick="prefillAndRun('parent_edu', '请基于本周数据，给我一个7天家庭陪伴与学习习惯计划（每天15-20分钟），重点针对薄弱项。')">生成7天家庭计划</button></div>`;
+            }
+            else if (type === 'parent_connect') {
+                steps = ["查询学业进度数据库", "扫描考勤与课堂表现", "检测异常指标", "生成预警摘要"];
+                summary = "本周学业进度正常。检测到 1 项<b>异常预警</b>，请关注。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">🔔 家校互通提醒</span></div>
+                    <div class="card-body">
+                        <div class="list-item">
+                            <div>📚 <strong>学业进度</strong></div>
+                            <span style="color:#666">第 3 单元（已完成 80%）</span>
+                        </div>
+                        <div class="list-item" style="background:#fef2f2;">
+                            <div>⚠️ <strong>异常预警</strong></div>
+                            <span style="color:#ef4444">连续 2 天未提交英语口语作业</span>
+                        </div>
+                        <div style="padding:15px; margin-top:10px; background:#f9fafb; border-radius:8px;">
+                            <div style="font-size:12px; color:#666; margin-bottom:5px;">AI 建议沟通话术：</div>
+                            <div style="font-size:13px;">“宝贝，最近英语口语练习是不是遇到了什么困难？需要爸爸妈妈陪你一起练吗？”</div>
+                        </div>
+                    </div>
+                    <div class="card-actions"><button class="btn btn-primary">联系班主任</button></div>`;
+            }
+            else if (type === 'parent_edu') {
+                steps = ["分析家长输入：厌学情绪", "匹配心理学模型：学习动力缺失", "检索家庭教育知识库", "生成个性化指导方案"];
+                summary = "针对<b>“厌学情绪”</b>，建议采用<b>“共情沟通法”</b>，并关注孩子最近的压力源。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700; color:#059669">🌱 家庭教育指导</span></div>
+                    <div class="card-body">
+                        <div class="list-item">
+                            <div><strong>1. 沟通技巧</strong><br><span style="font-size:12px; color:#666">先接纳情绪，再说教。尝试说：“看你最近很累，是不是学习压力太大了？”</span></div>
+                        </div>
+                        <div class="list-item">
+                            <div><strong>2. 推荐资源</strong><br><span style="font-size:12px; color:#10b981">📖 文章：《如何帮助青春期孩子重拾学习动力》</span></div>
+                        </div>
+                        <div style="margin-top:10px; padding:10px; background:#ecfdf5; border-radius:8px; font-size:13px; color:#047857;">
+                            🧠 <strong>心理锦囊：</strong> 很多时候“厌学”是对“挫败感”的防御，多给一些微小的正向反馈。
+                        </div>
+                    </div>`;
+            }
+
+            // ================== ADMIN ==================
+            else if (type === 'admin_safety') {
+                steps = ["连接安防摄像头流", "运行人脸识别算法", "检测区域入侵行为", "生成实时警报"];
+                summary = "全校安全监控运行中。发现 <b>2 处异常</b>，已自动标记。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700; color:#991b1b">🛡️ 风险预警中心</span><span class="tag tag-red">LIVE</span></div>
+                    <div class="card-body">
+                        <div class="alert-row">
+                            <div>
+                                <div style="font-weight:600; font-size:14px;">体育馆后门未锁</div>
+                                <div style="font-size:11px; color:#888;">安防系统 · 16:32 检测</div>
+                            </div>
+                            <span class="alert-badge bg-red">中风险</span>
+                        </div>
+                        <div class="alert-row">
+                            <div>
+                                <div style="font-weight:600; font-size:14px;">校门口陌生人逗留</div>
+                                <div style="font-size:11px; color:#888;">安防系统 · 16:35 检测</div>
+                            </div>
+                            <span class="alert-badge bg-red">高风险</span>
+                        </div>
+                        <div style="height:100px; background:#000; margin-top:10px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px;">
+                            [实时监控画面流 - 模拟]
+                        </div>
+                    </div>
+                    <div class="card-actions"><button class="btn btn-primary" style="background:#ef4444; border-color:#ef4444;">一键通知安保</button></div>`;
+            }
+            
+else if (type === 'admin_activity') {
+                const ana = APP_STATE.adminAnalytics || {};
+                const focus = (ctx && ctx.focus) ? ctx.focus : "一次函数截距";
+                const series = (ana.weakPointTrend && ana.weakPointTrend[focus]) ? ana.weakPointTrend[focus] : [5,6,6,7,8,9,10];
+                const cmp = (ana.classCompare || []);
+
+                steps = [
+                    "聚合学情数据（作业/练习/课堂反馈）",
+                    "更新薄弱点热度趋势（7天）",
+                    "按班级对比完成率/掌握率",
+                    "生成治理建议与督导动作（可派单）"
+                ];
+                summary = `教学治理看板已更新：薄弱点「<b>${focus}</b>」热度上升，建议关注班级完成率与掌握率。`;
+
+                artifactHTML = `
+                    <div class="card-header">
+                        <span style="font-weight:800;">🏛️ 治理驾驶舱 · 学情跟踪</span>
+                        <span style="font-size:11px; color:#6b7280;">${new Date().toLocaleDateString()}</span>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="stat-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-bottom:12px;">
+                            <div class="stat-box"><div class="stat-val">${Math.round((cmp[2]?.completion||0.65)*100)}%</div><div class="stat-lbl">本周完成率</div></div>
+                            <div class="stat-box"><div class="stat-val">${Math.round((cmp[2]?.mastery||0.66)*100)}%</div><div class="stat-lbl">本周掌握率</div></div>
+                            <div class="stat-box"><div class="stat-val" style="color:#ef4444">${focus}</div><div class="stat-lbl">重点薄弱点</div></div>
+                            <div class="stat-box"><div class="stat-val">${Math.max(...series)}</div><div class="stat-lbl">热度（7天）</div></div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1.15fr 0.85fr; gap:12px;">
+                            <div style="border:1px solid #e5e7eb; background:#fff; border-radius:16px; padding:12px;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;">
+                                    <div style="font-weight:800;">薄弱点趋势（7天）</div>
+                                    <span class="tag tag-blue">重点：${focus}</span>
+                                </div>
+                                <div style="margin:6px 0 10px;">${renderSparkline(series)}</div>
+                                <div style="font-size:12px; color:#6b7280; line-height:1.4;">
+                                    口径：热度 = 命中薄弱点的练习/错题任务数量（模拟）。推送任务会提升热度；学生完成回传后，掌握率会上调。
+                                </div>
+                            </div>
+
+                            <div style="border:1px solid #e5e7eb; background:#fff; border-radius:16px; padding:12px;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;">
+                                    <div style="font-weight:800;">班级对比</div>
+                                    <span class="tag tag-green">可督导</span>
+                                </div>
+                                <div style="max-height:180px; overflow:auto; border-radius:12px; border:1px solid #eef2f7;">
+                                    <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                                        <thead>
+                                            <tr style="background:#f9fafb; color:#6b7280;">
+                                                <th style="text-align:left; padding:8px; border-bottom:1px solid #eef2f7;">班级</th>
+                                                <th style="text-align:right; padding:8px; border-bottom:1px solid #eef2f7;">完成率</th>
+                                                <th style="text-align:right; padding:8px; border-bottom:1px solid #eef2f7;">掌握率</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${cmp.map(row=>{
+                                                const isFocus = row.className==="初二(3)班";
+                                                return `
+                                                    <tr style="background:${isFocus?"#fffbeb":"#fff"};">
+                                                        <td style="padding:8px; border-bottom:1px solid #f3f4f6; font-weight:${isFocus?800:650};">${row.className}</td>
+                                                        <td style="padding:8px; border-bottom:1px solid #f3f4f6; text-align:right;">${Math.round((row.completion||0)*100)}%</td>
+                                                        <td style="padding:8px; border-bottom:1px solid #f3f4f6; text-align:right;">${Math.round((row.mastery||0)*100)}%</td>
+                                                    </tr>
+                                                `;
+                                            }).join("")}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div style="margin-top:10px; font-size:12px; color:#6b7280; line-height:1.4;">
+                                    建议动作：对“完成率低于 65%”班级发起督导，重点关注薄弱点「${focus}」的讲评与分层作业。
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+                            <button class="btn btn-primary" onclick="addMsg('EduCore','已生成督导派单（模拟）：要求各班本周内完成薄弱点讲评与二次练习。')">生成督导派单</button>
+                            <button class="btn" style="border:1px solid #e5e7eb; background:#fff;" onclick="addMsg('EduCore','已生成简报（模拟）：薄弱点趋势 + 班级对比 + 建议动作。')">导出简报</button>
+                        </div>
+                    </div>`;
+            }
+else if (type === 'admin_canteen') {
+                steps = ["聚合食堂消费数据", "分析营养摄入模型", "抓取满意度评价关键词", "生成优化建议"];
+                summary = "本周食堂运营报告已生成。<b>B套餐（红烧肉）</b>最受欢迎，但<b>蔬菜摄入量</b>整体偏低。";
+                artifactHTML = `
+                    <div class="card-header"><span style="font-weight:700;">🍱 食堂智能管理</span></div>
+                    <div class="card-body">
+                        <div class="stat-grid">
+                            <div class="stat-box"><div class="stat-val">Top1</div><div class="stat-lbl">红烧肉套餐</div></div>
+                            <div class="stat-box"><div class="stat-val" style="color:#ef4444">Low</div><div class="stat-lbl">绿叶菜摄入</div></div>
+                            <div class="stat-box"><div class="stat-val">4.8</div><div class="stat-lbl">满意度评分</div></div>
+                        </div>
+                        <div class="list-item" style="margin-top:10px;">
+                            <div><strong>优化建议：</strong> 增加“清炒时蔬”作为赠送小菜，提升膳食纤维摄入。</div>
+                        </div>
+                    </div>
+                    <div class="card-actions"><button class="btn btn-primary">调整下周菜单</button></div>`;
+            }
+
+            // --- 渲染过程 ---
+            for (let txt of steps) {
+                const step = document.createElement('div');
+                step.className = 'step active';
+                step.innerHTML = `<i class="ri-loader-4-line spin"></i> ${txt}`;
+                thinkBox.appendChild(step);
+                scrollToBottom();
+                await wait(800);
+                step.className = 'step done';
+                step.innerHTML = `<i class="ri-check-line"></i> ${txt}`;
+            }
+
+            // --- 渲染最终卡片 ---
+            const finalCard = `
+                <div class="artifact-card" style="border-left: 4px solid var(--theme-color)">
+                    ${artifactHTML}
+                </div>`;
+            
+            addMsg('EduCore', summary + finalCard);
+        }
+
+        function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+        function scrollToBottom() { const cl = document.getElementById('chatLayer'); cl.scrollTop = cl.scrollHeight; }
+
+    </script>
+
+    <!-- 配置推送弹窗（链路A增强：选知识点+选学生） -->
+    
+<div class="modal-overlay" id="pushModal">
+        <div class="modal">
+            <div class="modal-hd">
+                <div class="modal-title">配置并推送错题练习包</div>
+                <button class="mini-btn" onclick="closePushModal()"><i class="ri-close-line"></i> 关闭</button>
+            </div>
+            <div class="modal-bd">
+                <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+                    选择推送维度（知识点 / 错因标签 / 题目订正）与目标学生。系统将生成学生端待办，并携带教师上下文；学生完成后可回传老师用于分层巩固。
+                </div>
+
+                <div class="seg-row">
+                    <div class="seg" role="tablist" aria-label="push-mode">
+                        <button id="pushMode_kp" class="seg-btn active" onclick="setPushMode('kp')">按知识点</button>
+                        <button id="pushMode_tag" class="seg-btn" onclick="setPushMode('tag')">按错因标签</button>
+                        <button id="pushMode_q" class="seg-btn" onclick="setPushMode('q')">按题目订正</button>
+                    </div>
+                    <div style="font-size:12px; color:#6b7280;">默认推荐来自作业洞察，可多选。</div>
+                </div>
+
+                <div class="modal-grid">
+                    <!-- 左侧：推送内容 -->
+                    <div class="pick">
+                        <div class="pick-h">
+                            <span id="pickTitle">知识点（可多选）</span>
+                            <button class="mini-btn" onclick="toggleAll(APP_STATE.pushMode || 'kp', true)">全选</button>
+                        </div>
+
+                        <div id="pick_kp">
+                            <ul id="kpPickList"></ul>
+                            <div style="margin-top:8px; font-size:12px; color:#6b7280;">建议：优先推送“洞察命中”的 1 个知识点，再补充 1 个扩展点。</div>
+                        </div>
+
+                        <div id="pick_tag" style="display:none;">
+                            <ul id="tagPickList"></ul>
+                            <div style="margin-top:8px; font-size:12px; color:#6b7280;">建议：按错因标签推送，更贴近“分层纠错”教学法。</div>
+                        </div>
+
+                        <div id="pick_q" style="display:none;">
+                            <ul id="qPickList"></ul>
+                            <div style="margin-top:8px; font-size:12px; color:#6b7280;">建议：按题目订正推送，适合关键错题“当堂清”。</div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：选择学生 -->
+                    <div class="pick">
+                        <div class="pick-h">
+                            <span>学生（可多选）</span>
+                            <div style="display:flex; gap:8px;">
+                                <button class="mini-btn" onclick="toggleAll('stu', true)">全选</button>
+                                <button class="mini-btn" onclick="toggleAll('stu', false)">清空</button>
+                            </div>
+                        </div>
+                        <ul id="stuPickList"></ul>
+                        <div style="margin-top:8px; font-size:12px; color:#6b7280;">默认勾选：洞察关注学生（错因命中更高）。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-ft">
+                <button class="btn-ghost" onclick="closePushModal()">取消</button>
+                <button class="btn-solid" onclick="confirmPushModal()">确认推送</button>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div class="agent-grid" id="agents-grid"></div>
-</div>
-
-<!-- KB -->
-<div class="view-container" id="view-kb">
-  <div class="kb-head">
-    <h1>学校私有知识库管理</h1>
-    <p>上传/编辑/发布学校私域内容，支撑数字人问答与角色智能体（演示）。</p>
-  </div>
-
-  <div class="kb-grid">
-    <div class="card kb-form">
-      <div class="section-title">新增条目</div>
-      <input id="kb-title" class="magic-input" placeholder="标题：如「课后服务选课指南」" />
-      <textarea id="kb-content" class="kb-textarea" placeholder="内容：支持流程、材料、时间、联系方式…（演示）"></textarea>
-      <div class="kb-row">
-        <select id="kb-category" class="kb-select">
-          <option value="办事指南">办事指南</option>
-          <option value="通知公告">通知公告</option>
-          <option value="家校沟通">家校沟通</option>
-          <option value="制度规范">制度规范</option>
-        </select>
-        <button class="btn btn-primary" onclick="kbAdd()">提交审核</button>
-      </div>
-      <div class="kb-hint">提示：演示版将模拟“提交—审核—发布”流程，并记录命中统计。</div>
-    </div>
-
-    <div class="card kb-list">
-      <div class="section-title">条目列表</div>
-      <div id="kb-list"></div>
-    </div>
-  </div>
-</div>
-
-<script src="/assets/app.js"></script>
-  </body>
+</body>
 </html>
